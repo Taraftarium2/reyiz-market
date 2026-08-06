@@ -65,6 +65,15 @@ try { fs.writeFileSync(path.join(targetStorageDir, '.gitkeep'), ''); } catch (e)
     const schemaSql = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
     await db.query(schemaSql);
     await db.query('ALTER TABLE games ADD COLUMN IF NOT EXISTS external_buy_url TEXT');
+    await db.query('ALTER TABLE orders ADD COLUMN IF NOT EXISTS coupon_code TEXT');
+    await db.query('ALTER TABLE orders ADD COLUMN IF NOT EXISTS discount_amount NUMERIC(10,2) DEFAULT 0');
+
+    // Örnek indirim kuponu kontrolü
+    const existingCoupon = await db.query("SELECT id FROM coupons WHERE code='TIKTOK20'");
+    if (!existingCoupon.rows.length) {
+      await db.query("INSERT INTO coupons (code, discount_percent, active) VALUES ('TIKTOK20', 20, true)");
+      console.log('✅ Varsayılan kupon eklendi: TIKTOK20 (%20 İndirim)');
+    }
     
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@reyizmarket.click';
     const adminPass = process.env.ADMIN_PASSWORD || 'admin123';
