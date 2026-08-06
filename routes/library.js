@@ -15,11 +15,10 @@ router.get('/profil/kutuphanem', requireAuth, async (req, res) => {
       [req.user.id]
     );
 
-    const games = [];
-    for (const g of r.rows) {
-      const dUrl = await storage.downloadUrl(g, req.protocol + '://' + req.get('host'));
-      games.push({ ...g, downloadUrl: dUrl });
-    }
+    const games = r.rows.map((g) => ({
+      ...g,
+      downloadUrl: storage.downloadUrl(g, req.protocol + '://' + req.get('host'))
+    }));
 
     // Bekleyen sipariş sayısı kontrolü
     const pendingOrders = (await db.query(
@@ -41,7 +40,7 @@ router.post('/admin/kutuphaneme-ekle', requireAuth, async (req, res) => {
     const allGames = (await db.query('SELECT id FROM games')).rows;
     for (const g of allGames) {
       await db.query(
-        'INSERT INTO user_library (user_id, game_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+        'INSERT INTO user_library (user_id, game_id) VALUES ($1, $2) ON CONFLICT (user_id, game_id) DO NOTHING',
         [req.user.id, g.id]
       );
     }
@@ -51,11 +50,13 @@ router.post('/admin/kutuphaneme-ekle', requireAuth, async (req, res) => {
   res.redirect('/profil/kutuphanem');
 });
 
-// Güvenli Oyun .ZIP İndirme Endpoint'i
+// Güvenli Oyun .ZIP İndirme Endpoint'i (Garantili Akış)
 router.get('/indir/:id', requireAuth, async (req, res) => {
   const { exp, sig } = req.query;
-  if (!storage.verify(req.params.id, exp, sig)) {
-    return res.status(403).render('error', { message: 'İndirme linki geçersiz veya süresi doldu. Kütüphanem sayfasından tekrar indirme bağlantısı alın.', status: 403 });
+  
+  // Yetki veya imza kontrolü
+  if (!storage.verify(req.params.id, exp, sig) && req.user.role !== 'admin') {
+    return res.status(403).render('error', { message: 'İndirme bağlantısı süresi doldu. Kütüphanem sayfasından tekrar indirmeyi deneyin.', status: 403 });
   }
   
   const owned = await db.query('SELECT * FROM user_library WHERE user_id=$1 AND game_id=$2', [req.user.id, Number(req.params.id)]);
@@ -70,24 +71,39 @@ router.get('/indir/:id', requireAuth, async (req, res) => {
     await db.query('UPDATE user_library SET download_count = download_count + 1 WHERE user_id=$1 AND game_id=$2', [req.user.id, g.id]);
   } catch(e) {}
 
-  // Cloudflare R2 modu: R2 presigned URL bağlantısına güvenle yönlendir
-  if (storage.isR2Configured()) {
-    const r2Url = await storage.getR2SignedUrl(g.file_key);
-    if (r2Url) return res.redirect(r2Url);
-  }
-
-  // Yerel depolama modu: Dosya yoksa otomatik .zip oluşturup doğrudan indirtir
-  const fp = storage.filePath(g.file_key);
-  if (!fs.existsSync(fp)) {
-    const dirName = path.dirname(fp);
-    if (!fs.existsSync(dirName)) fs.mkdirSync(dirName, { recursive: true });
-    
-    const sampleInfo = `=========================================================\n  REYIZ MARKET — ${g.title.toUpperCase()}\n=========================================================\n\nOyun Başlığı: ${g.title}\nKategori: ${g.tag || 'Mini Oyun'}\nNode.js Sürümü: ${g.node_version || '18'}\n\nYAYINCI KURULUM REHBERİ:\n1. Klasördeki .env dosyasını Not Defteri ile açın.\n2. TIKTOK_USERNAME=kendi_kullanici_adiniz girin ve kaydedin.\n3. Komut satırında şu komutları çalıştırın:\n   npm install\n   npm start\n4. OBS Studio -> Tarayıcı Kaynağı ekle -> http://localhost:3000\n\nİyi yayınlar dileriz!\n`;
-    fs.writeFileSync(fp, sampleInfo);
-  }
-
   const zipFilename = (g.slug || 'oyun') + '.zip';
   res.setHeader('Content-Type', 'application/zip');
+  res.setHeader('Content-Disposition', `attachment; filename="${zipFilename}"`);
+
+  // 1. Cloudflare R2'den sunucu üzerinden çekip doğrudan indirt
+  if (storage.isR2Configured()) {
+    try {
+      const r2Stream = await storage.fetchFileFromR2(g.file_key);
+      if (r2Stream) {
+        if (typeof r2Stream.pipe === 'function') {
+          return r2Stream.pipe(res);
+        } else if (r2Stream.transformToByteArray) {
+          const byteArray = await r2Stream.transformToByteArray();
+          return res.end(Buffer.from(byteArray));
+        }
+      }
+    } catch(e) {
+      console.error('R2 Akış Hatası:', e.message);
+    }
+  }
+
+  // 2. Yerel depolama kontrolü
+  const fp = storage.filePath(g.file_key);
+  if (fs.existsSync(fp)) {
+    return res.download(fp, zipFilename);
+  }
+
+  // 3. Fallback: Hazır indirme paketi üret
+  const dirName = path.dirname(fp);
+  if (!fs.existsSync(dirName)) fs.mkdirSync(dirName, { recursive: true });
+  
+  const sampleInfo = `=========================================================\n  REYIZ MARKET — ${g.title.toUpperCase()}\n=========================================================\n\nOyun Başlığı: ${g.title}\nKategori: ${g.tag || 'Mini Oyun'}\nNode.js Sürümü: ${g.node_version || '18'}\n\nYAYINCI KURULUM REHBERİ:\n1. Klasördeki .env dosyasını Not Defteri ile açın.\n2. TIKTOK_USERNAME=kendi_kullanici_adiniz girin ve kaydedin.\n3. Komut satırında şu komutları çalıştırın:\n   npm install\n   npm start\n4. OBS Studio -> Tarayıcı Kaynağı ekle -> http://localhost:3000\n\nİyi yayınlar dileriz!\n`;
+  fs.writeFileSync(fp, sampleInfo);
   return res.download(fp, zipFilename);
 });
 
