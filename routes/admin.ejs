@@ -1,0 +1,332 @@
+<%- include('partials/header') %>
+
+<section class="section">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px">
+    <h2>⚙ Admin Yönetim Paneli</h2>
+    <span class="badge badge-paid">🟢 Sistem Aktif & Güvenli</span>
+  </div>
+
+  <!-- İATATİSTİK KARTLARI -->
+  <div class="stat-cards">
+    <div class="stat-card">
+      <div class="stat-icon">💰</div>
+      <div class="stat-body">
+        <div class="stat-value">₺<%= Number(stats.totalRevenue).toLocaleString('tr-TR',{minimumFractionDigits:0}) %></div>
+        <div class="stat-label">Toplam Gelir</div>
+      </div>
+    </div>
+    <div class="stat-card stat-card--warn">
+      <div class="stat-icon">⏳</div>
+      <div class="stat-body">
+        <div class="stat-value"><%= stats.pendingCount %></div>
+        <div class="stat-label">Bekleyen Sipariş</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">👥</div>
+      <div class="stat-body">
+        <div class="stat-value"><%= stats.totalUsers %></div>
+        <div class="stat-label">Kayıtlı Kullanıcı</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">📦</div>
+      <div class="stat-body">
+        <div class="stat-value"><%= stats.totalOrders %></div>
+        <div class="stat-label">Toplam Sipariş</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="admin-grid">
+    <!-- Sol Kolon: Oyun Ekleme Formu -->
+    <div>
+      <div class="admin-panel-box">
+        <div class="panel-title">🎮 Yeni Oyun Ekle</div>
+        <form method="post" action="/admin/oyun" enctype="multipart/form-data" class="form">
+          <div class="form-group">
+            <label>Oyun Başlığı *</label>
+            <input name="title" placeholder="Örn: Ne Çizdim?" required>
+          </div>
+          <div class="form-group">
+            <label>Slug <span style="color:var(--faint);font-weight:400">(boş = otomatik)</span></label>
+            <input name="slug" placeholder="ne-cizdim">
+          </div>
+          <div class="form-group">
+            <label>Fiyat (₺) *</label>
+            <input name="price" type="number" step="0.01" min="0" placeholder="149" required>
+          </div>
+          <div class="form-group">
+            <label>Kapak Görsel URL</label>
+            <input name="cover_image_url" placeholder="https://...">
+          </div>
+          <div class="form-group">
+            <label>Node.js Sürümü</label>
+            <input name="node_version" placeholder="18">
+          </div>
+          <div class="form-group">
+            <label>Kategori / Tag</label>
+            <input name="tag" placeholder="Örn: Quiz, Çizim, Aksiyon">
+          </div>
+          <div class="form-group">
+            <label>Açıklama</label>
+            <textarea name="description" placeholder="Oyun özellikleri ve açıklaması"></textarea>
+          </div>
+          <label style="cursor:pointer;user-select:none">
+            <input type="checkbox" name="featured" value="1"> ⭐ Öne çıkan çok satan oyun
+          </label>
+          <div class="form-group">
+            <label>İtemSatış / Bynogame / Harici Ödeme Linki</label>
+            <input name="external_buy_url" placeholder="https://www.itemsatis.com/ilanlar/...">
+          </div>
+          <button class="btn big" type="submit" style="margin-top:10px">+ Oyunu Kataloğa Ekle</button>
+        </form>
+      </div>
+
+      <!-- Kullanıcıya Doğrudan Oyun Tanımla -->
+      <div class="admin-panel-box" style="margin-top:20px">
+        <div class="panel-title">🎁 Kullanıcıya Oyun Tanımla</div>
+        <form method="post" action="/admin/kullaniciya-oyun-ekle" class="form">
+          <div class="form-group">
+            <label>Kullanıcı E-postası *</label>
+            <input name="email" placeholder="kullanici@mail.com" required>
+          </div>
+          <div class="form-group">
+            <label>Tanımlanacak Oyun *</label>
+            <select name="game_id" style="width:100%;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:10px;color:var(--text)" required>
+              <% games.forEach(function(g){ %>
+                <option value="<%= g.id %>"><%= g.title %> (₺<%= Number(g.price).toFixed(0) %>)</option>
+              <% }); %>
+            </select>
+          </div>
+          <button class="btn ghost" type="submit" style="width:100%;margin-top:8px">+ Kütüphaneye Tanımla</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Sağ Kolon: Oyunlar, Siparişler ve Kullanıcılar -->
+    <div style="display:flex;flex-direction:column;gap:26px">
+
+      <!-- OYUNLAR LİSTESİ DÜZENLE / SİL -->
+      <div class="admin-panel-box">
+        <div class="panel-title">
+          🎮 Katalogdaki Oyunlar 
+          <span style="color:var(--muted);font-weight:400;font-size:.85rem">(<%= games.length %> oyun)</span>
+        </div>
+        <% if (!games.length) { %>
+          <p class="muted" style="padding:12px 0">Henüz hiç oyun eklenmedi.</p>
+        <% } else { %>
+        <div style="overflow-x:auto">
+          <table class="tbl">
+            <thead>
+              <tr><th>Başlık</th><th>Fiyat</th><th>Kategori</th><th>Öne Çıkan</th><th>İşlemler</th></tr>
+            </thead>
+            <tbody>
+              <% games.forEach(function (g) { %>
+              <tr>
+                <td><strong><%= g.title %></strong></td>
+                <td style="color:var(--orange2);font-weight:700">₺<%= Number(g.price).toFixed(0) %></td>
+                <td><span class="badge"><%= g.tag || 'Oyun' %></span></td>
+                <td><%= g.featured ? '⭐ Evet' : '—' %></td>
+                <td>
+                  <div class="td-actions">
+                    <!-- DÜZENLE BUTONU (Modal Açar) -->
+                    <button class="btn sm ghost" onclick="openEditModal(<%= JSON.stringify(g) %>)" style="color:var(--purple2)">✏️ Düzenle</button>
+                    <!-- SİL BUTONU -->
+                    <form method="post" action="/admin/oyun/<%= g.id %>/sil" style="display:inline" onsubmit="return confirm('<%= g.title %> oyununu silmek istediğinize emin misiniz?')">
+                      <button class="btn sm btn-cancel">🗑 Sil</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+        <% } %>
+      </div>
+
+      <!-- SİPARİŞLER TABLOSU -->
+      <div class="admin-panel-box">
+        <div class="panel-title">
+          📋 Sipariş Yönetimi
+          <% var pendingOrders = orders.filter(function(o){return o.status==='pending';}); %>
+          <% if (pendingOrders.length > 0) { %>
+            <span class="badge badge-pending" style="margin-left:8px"><%= pendingOrders.length %> onay bekliyor</span>
+          <% } %>
+        </div>
+        <% if (!orders.length) { %>
+          <p class="muted" style="padding:12px 0">Henüz sipariş yok.</p>
+        <% } else { %>
+        <div style="overflow-x:auto">
+          <table class="tbl">
+            <thead>
+              <tr><th>Sipariş Kodu</th><th>Kullanıcı</th><th>Oyunlar</th><th>Tutar</th><th>Tarih</th><th>Durum</th><th>İşlemler</th></tr>
+            </thead>
+            <tbody>
+              <% orders.forEach(function (o) { %>
+              <tr class="<%= o.status === 'pending' ? 'tr-pending' : '' %>">
+                <td><code style="font-size:.8rem;color:var(--text);font-weight:700"><%= o.payment_ref || ('#'+o.id) %></code></td>
+                <td style="font-size:.85rem"><%= o.email %></td>
+                <td class="td-games">
+                  <% if (o.items && o.items[0] && o.items[0].title) { %>
+                    <% o.items.forEach(function(item){ %><span class="order-game-tag sm"><%= item.title %></span> <% }); %>
+                  <% } %>
+                </td>
+                <td><strong style="color:var(--orange2)">₺<%= Number(o.total_amount).toFixed(0) %></strong></td>
+                <td class="td-date"><%= new Date(o.created_at).toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) %></td>
+                <td>
+                  <% if (o.status==='paid') { %><span class="badge badge-paid">✓ Onaylandı</span>
+                  <% } else if (o.payment_provider==='manual_notified' && o.status==='pending') { %><span class="badge" style="background:rgba(234,179,8,.2);color:#fbbf24;border:1px solid #fbbf24;font-weight:800;animation:pulse 1.5s infinite">⚡ Ödeme Bildirimi Geldi</span>
+                  <% } else if (o.status==='pending') { %><span class="badge badge-pending">⏳ Havale Bekliyor</span>
+                  <% } else if (o.status==='cancelled') { %><span class="badge badge-cancelled">✕ İptal</span>
+                  <% } %>
+                </td>
+                <td>
+                  <div class="td-actions">
+                    <% if (o.status==='pending') { %>
+                      <form method="post" action="/admin/siparis/<%= o.id %>/onayla" onsubmit="return confirm('Bu sipariş onaylanacak ve oyunlar kullanıcının kütüphanesine eklenecektir. Onaylıyor musunuz?')">
+                        <button class="btn sm btn-approve">✓ Onayla</button>
+                      </form>
+                      <form method="post" action="/admin/siparis/<%= o.id %>/iptal" onsubmit="return confirm('Siparişi iptal etmek istediğinize emin misiniz?')">
+                        <button class="btn ghost sm btn-cancel">✕ İptal</button>
+                      </form>
+                    <% } %>
+                    <form method="post" action="/admin/siparis/<%= o.id %>/sil" onsubmit="return confirm('Sipariş kaydını tamamen silmek istiyor musunuz?')">
+                      <button class="btn ghost sm" style="color:var(--muted);padding:4px 8px" title="Kayıt Sil">🗑</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+        <% } %>
+      </div>
+
+      <!-- KULLANICI YÖNETİMİ TABLOSU -->
+      <div class="admin-panel-box">
+        <div class="panel-title">
+          👥 Kayıtlı Kullanıcılar & Yetkiler
+          <span style="color:var(--muted);font-weight:400;font-size:.85rem">(<%= users ? users.length : 0 %> üye)</span>
+        </div>
+        <% if (!users || !users.length) { %>
+          <p class="muted" style="padding:12px 0">Henüz kayıtlı üye yok.</p>
+        <% } else { %>
+        <div style="overflow-x:auto">
+          <table class="tbl">
+            <thead>
+              <tr><th>Ad</th><th>E-posta</th><th>Rol / Yetki</th><th>Kayıt Tarihi</th><th>İşlem</th></tr>
+            </thead>
+            <tbody>
+              <% users.forEach(function (u) { %>
+              <tr>
+                <td><strong><%= u.name || '—' %></strong></td>
+                <td><%= u.email %></td>
+                <td>
+                  <% if (u.role === 'admin') { %>
+                    <span class="badge badge-paid">⚙ Admin</span>
+                  <% } else { %>
+                    <span class="badge">Kullanıcı</span>
+                  <% } %>
+                </td>
+                <td class="td-date"><%= new Date(u.created_at).toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric'}) %></td>
+                <td>
+                  <form method="post" action="/admin/kullanici/<%= u.id %>/rol" style="display:inline">
+                    <% if (u.role === 'admin') { %>
+                      <input type="hidden" name="role" value="user">
+                      <button class="btn ghost sm" style="color:var(--muted)">Adminlikten Çıkar</button>
+                    <% } else { %>
+                      <input type="hidden" name="role" value="admin">
+                      <button class="btn sm ghost" style="color:var(--purple2)">+ Admin Yap</button>
+                    <% } %>
+                  </form>
+                </td>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+        <% } %>
+      </div>
+
+    </div><!-- /Sağ kolon -->
+  </div><!-- /admin-grid -->
+</section>
+
+<!-- OYUN DÜZENLEME MODAL (POP-UP) -->
+<div id="editModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(10px);z-index:999;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--card);border:1px solid var(--border2);border-radius:20px;max-width:540px;width:100%;padding:28px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <h3 style="font-size:1.2rem">✏️ Oyunu Düzenle</h3>
+      <button onclick="closeEditModal()" style="background:none;border:none;color:var(--muted);font-size:1.5rem;cursor:pointer">✕</button>
+    </div>
+    <form id="editForm" method="post" action="" enctype="multipart/form-data" class="form">
+      <div class="form-group">
+        <label>Oyun Başlığı *</label>
+        <input id="editTitle" name="title" required>
+      </div>
+      <div class="form-group">
+        <label>Slug</label>
+        <input id="editSlug" name="slug" required>
+      </div>
+      <div class="form-group">
+        <label>Fiyat (₺) *</label>
+        <input id="editPrice" name="price" type="number" step="0.01" min="0" required>
+      </div>
+      <div class="form-group">
+        <label>Kapak Görsel URL</label>
+        <input id="editCover" name="cover_image_url">
+      </div>
+      <div class="form-group">
+        <label>Node.js Sürümü</label>
+        <input id="editNode" name="node_version">
+      </div>
+      <div class="form-group">
+        <label>Kategori / Tag</label>
+        <input id="editTag" name="tag">
+      </div>
+      <div class="form-group">
+        <label>Açıklama</label>
+        <textarea id="editDesc" name="description"></textarea>
+      </div>
+      <label style="cursor:pointer;user-select:none">
+        <input id="editFeatured" type="checkbox" name="featured" value="1"> ⭐ Öne çıkan çok satan oyun
+      </label>
+      <div class="form-group">
+        <label>İtemSatış / Bynogame / Harici Ödeme Linki</label>
+        <input id="editExternalUrl" name="external_buy_url" placeholder="https://www.itemsatis.com/ilanlar/...">
+      </div>
+      <div class="form-group" style="margin-top:8px">
+        <label>Yeni Oyun Dosyası Yükle (.zip) <span style="color:var(--muted);font-weight:400">(Boş bırakırsanız mevcut dosya kalır)</span></label>
+        <input type="file" name="file" accept=".zip">
+      </div>
+      <div style="display:flex;gap:10px;margin-top:16px">
+        <button class="btn big" type="submit" style="flex:1">💾 Değişiklikleri Kaydet</button>
+        <button type="button" class="btn ghost" onclick="closeEditModal()">İptal</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openEditModal(game) {
+  document.getElementById('editForm').action = '/admin/oyun/' + game.id + '/duzenle';
+  document.getElementById('editTitle').value = game.title || '';
+  document.getElementById('editSlug').value = game.slug || '';
+  document.getElementById('editPrice').value = game.price || 0;
+  document.getElementById('editCover').value = game.cover_image_url || '';
+  document.getElementById('editNode').value = game.node_version || '18';
+  document.getElementById('editTag').value = game.tag || '';
+  document.getElementById('editDesc').value = game.description || '';
+  document.getElementById('editExternalUrl').value = game.external_buy_url || '';
+  document.getElementById('editFeatured').checked = !!game.featured;
+  document.getElementById('editModal').style.display = 'flex';
+}
+function closeEditModal() {
+  document.getElementById('editModal').style.display = 'none';
+}
+</script>
+
+<%- include('partials/footer') %>
