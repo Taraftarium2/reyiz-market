@@ -1,20 +1,26 @@
 <%- include('partials/header') %>
 <section class="section">
-  <h2>Kütüphanem</h2>
+  <div class="sec-head">
+    <h2>Kütüphanem</h2>
+    <span class="count"><%= games.length %> oyun</span>
+  </div>
   <% if (!games.length) { %>
-    <p class="empty">Henüz oyun satın almadın. <a href="/oyunlar">Mağazaya git</a>.</p>
+    <div class="empty"><p>Henüz oyun satın almadın.</p><a class="btn" href="/oyunlar">Mağazaya Git</a></div>
   <% } else { %>
     <div class="grid">
       <% games.forEach(function (g) { %>
         <article class="card">
           <div class="cover" style="background:<%= g.cover_image_url || 'linear-gradient(135deg,#8b5cf6,#f97316)' %>">
-            <% if (g.cover_image_url) { %><img src="<%= g.cover_image_url %>"><% } %>
+            <% if (g.cover_image_url) { %><img src="<%= g.cover_image_url %>" alt=""><% } %>
+            <span class="tag"><%= g.tag %></span>
           </div>
           <div class="card-body">
             <h3><%= g.title %></h3>
-            <p class="muted">İndirme: <%= g.download_count %></p>
+            <p class="muted">İndirme: <%= g.download_count %> · <%- new Date(g.purchased_at).toLocaleDateString('tr-TR') %></p>
             <a class="btn" href="<%= g.downloadUrl %>">⬇ İndir (.zip)</a>
-            <p class="note">Bağlantı 10 dakika geçerlidir. İstediğin zaman yeniden alabilirsin.</p>
+            <div class="hint">
+              <b>Kurulum:</b> zip'i aç → klasörde <code>npm install</code> → <code>npm start</code> → oyunun kendi adresini aç. Detaylar zip içindeki <b>README.md</b>'de.
+            </div>
           </div>
         </article>
       <% }) %>
