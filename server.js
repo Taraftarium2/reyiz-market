@@ -8,13 +8,12 @@ const fs = require('fs');
 
 const db = require('./db');
 const { getUser } = require('./auth');
-const { STORAGE_DIR } = require('./storage');
+const { STORAGE_DIR, isR2Configured } = require('./storage');
 
 const app = express();
 app.disable('x-powered-by');
-app.set('trust proxy', 1); // Railway / Cloudflare proxy için doğru protocol/host
 app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'))
+app.set('views', path.join(__dirname, 'views'));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
@@ -23,28 +22,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Sağlık kontrolü (Railway / uptime monitor)
 app.get('/health', async (req, res) => {
   try { await db.query('SELECT 1'); res.send('ok'); }
-  catch (e) { res.status(503).send('db error: ' + e.message); }
-});
-
-// R2 + Library sağlık kontrolü (debug için)
-app.get('/health/r2', async (req, res) => {
-  try {
-    const storage = require('./storage');
-    const status = storage.getR2ConfigStatus ? storage.getR2ConfigStatus() : { configured: storage.isR2Configured() };
-    let test = null;
-    if (storage.testR2Connection) {
-      test = await storage.testR2Connection();
-    }
-    // DB library sağlık
-    let libCheck = null;
-    try {
-      const c = await db.query('SELECT COUNT(*) AS v FROM user_library');
-      libCheck = `user_library: ${c.rows[0].v} kayıt`;
-    } catch(e) { libCheck = 'hata: ' + e.message; }
-    res.json({ r2Status: status, r2Test: test, storageDir: STORAGE_DIR, exists: fs.existsSync(STORAGE_DIR), libCheck, paymentMode: process.env.PAYMENT_MODE || 'manual' });
-  } catch(e) {
-    res.status(500).json({ error: e.message });
-  }
+  catch (e) { res.status(503).send('db error'); }
 });
 
 // SEO: robots.txt
@@ -77,35 +55,18 @@ app.get('/sitemap.xml', async (req, res) => {
 // storage klasörünün var olduğundan emin ol
 const targetStorageDir = (STORAGE_DIR && String(STORAGE_DIR).trim() !== '') ? STORAGE_DIR : path.join(__dirname, 'storage');
 if (!fs.existsSync(targetStorageDir)) {
-  try { fs.mkdirSync(targetStorageDir, { recursive: true }); console.log('📁 Storage klasörü oluşturuldu:', targetStorageDir); } catch (e) { if (e.code !== 'EEXIST') throw e; }
+  try { fs.mkdirSync(targetStorageDir, { recursive: true }); } catch (e) { if (e.code !== 'EEXIST') throw e; }
 }
 try { fs.writeFileSync(path.join(targetStorageDir, '.gitkeep'), ''); } catch (e) {}
-
-// R2 durumunu başlangıçta logla
-try {
-  const storage = require('./storage');
-  const s = storage.getR2ConfigStatus ? storage.getR2ConfigStatus() : { configured: storage.isR2Configured() };
-  console.log('🔧 R2 Durumu (başlangıç):', JSON.stringify(s));
-  console.log('🔧 PAYMENT_MODE:', process.env.PAYMENT_MODE || 'manual (varsayılan)');
-  console.log('🔧 INSTANT_DELIVERY:', process.env.INSTANT_DELIVERY !== 'false' ? 'true (ödeme anında kütüphaneye ekle)' : 'false (admin onayı gerekli)');
-  if (!s.configured) {
-    console.warn('⚠️ UYARI: R2 yapılandırılmadı! Dosyalar sadece yerel diskte saklanacak. Railway/Render gibi ephemeral diskte dosyalar restart sonrası kaybolabilir.');
-    console.warn('   Çözüm: Railway dashboard > Variables > R2_ENDPOINT, R2_ACCESS_KEY, R2_SECRET_KEY, R2_BUCKET ekleyin.');
-  }
-} catch(e) {}
 
 // Otomatik veritabanı kurulumu ve Admin hesabı garantisi
 (async function initDatabase() {
   try {
     const schemaSql = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
     await db.query(schemaSql);
-    console.log('✅ schema.sql uygulandı');
     await db.query('ALTER TABLE games ADD COLUMN IF NOT EXISTS external_buy_url TEXT');
     await db.query('ALTER TABLE orders ADD COLUMN IF NOT EXISTS coupon_code TEXT');
     await db.query('ALTER TABLE orders ADD COLUMN IF NOT EXISTS discount_amount NUMERIC(10,2) DEFAULT 0');
-    // Eksik olabilecek kolonlar için ek ALTER (idempotent)
-    await db.query('ALTER TABLE games ADD COLUMN IF NOT EXISTS file_key TEXT');
-    await db.query('ALTER TABLE user_library ADD COLUMN IF NOT EXISTS download_count INT DEFAULT 0');
 
     // Örnek indirim kuponu kontrolü
     const existingCoupon = await db.query("SELECT id FROM coupons WHERE code='TIKTOK20'");
@@ -129,14 +90,8 @@ try {
         [hash, 'admin', adminEmail]);
       console.log('✅ Admin hesabı şifre ve yetkisi güncellendi:', adminEmail);
     }
-
-    // Library sağlık kontrolü: pending ama paid olmalı olan sipariş var mı?
-    try {
-      const pend = (await db.query(`SELECT COUNT(*) AS v FROM orders WHERE status='pending'`)).rows[0].v;
-      if (Number(pend) > 0) console.log(`ℹ️ ${pend} adet bekleyen sipariş var - admin onayı bekleniyor`);
-    } catch(e) {}
   } catch (err) {
-    console.error('⚠️ DB otomatik kurulum uyarısı:', err.message, err.stack?.slice(0, 500));
+    console.error('⚠️ DB otomatik kurulum uyarısı:', err.message);
   }
 })();
 
@@ -145,7 +100,7 @@ app.use((req, res, next) => {
   res.locals.user = getUser(req);
   let cart = [];
   try { cart = req.cookies.cart ? JSON.parse(req.cookies.cart) : []; } catch (e) {}
-  res.locals.cartCount = Array.isArray(cart) ? cart.length : 0;
+  res.locals.cartCount = cart.length;
   res.locals.title = 'Reyiz Market';
   next();
 });
@@ -166,13 +121,18 @@ app.use((req, res) => res.status(404).render('error', { message: 'Sayfa bulunama
 
 // Global hata yakalayıcı — uygulama çökmesin, temiz hata sayfası göstersin
 app.use((err, req, res, next) => {
-  console.error('❌ Hata:', err.message, err.stack?.slice(0, 800));
+  console.error('❌ Hata:', err);
   res.status(500).render('error', { message: 'Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.', status: 500 });
 });
 
 // Beklenmedik çökmelere karşı koruma (Node çökmesin)
-process.on('unhandledRejection', (err) => console.error('Unhandled Rejection:', err?.message || err));
-process.on('uncaughtException', (err) => console.error('Uncaught Exception:', err?.message || err));
+process.on('unhandledRejection', (err) => console.error('Unhandled Rejection:', err));
+process.on('uncaughtException', (err) => console.error('Uncaught Exception:', err));
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log('⚡ Reyiz Market çalışıyor → http://localhost:' + PORT));
+app.listen(PORT, () => {
+  const r2msg = isR2Configured() ? '✅ Cloudflare R2 aktif (bucket: ' + (process.env.R2_BUCKET || '') + ')' : '⚠️ R2 YAPILANDIRILMADI — dosyalar sadece geçici local storage\'de saklanacak. Railway "Variables" bölümüne R2_* ekle.';
+  console.log('⚡ Reyiz Market çalışıyor → http://localhost:' + PORT);
+  console.log(r2msg);
+  console.log('📂 STORAGE_DIR:', STORAGE_DIR);
+});
