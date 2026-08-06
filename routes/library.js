@@ -26,10 +26,10 @@ router.get('/profil/kutuphanem', requireAuth, async (req, res) => {
       [req.user.id]
     )).rows[0]?.v || 0;
 
-    res.render('library', { games, pendingOrders: Number(pendingOrders) });
+    res.render('library', { games, pendingOrders: Number(pendingOrders), dbHata: null });
   } catch (e) {
-    console.error('Kütüphane sorgu hatası:', e);
-    res.render('library', { games: [], pendingOrders: 0 });
+    console.error('❌ Kütüphane sorgu hatası (oyunlar listelenemedi):', e);
+    res.render('library', { games: [], pendingOrders: 0, dbHata: req.user.role === 'admin' ? e.message : null });
   }
 });
 

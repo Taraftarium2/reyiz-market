@@ -49,13 +49,17 @@ router.get('/', requireAdmin, async (req, res) => {
     const rOrd = await db.query(`SELECT COUNT(*) AS v FROM orders`);
     stats.totalOrders = rOrd.rows[0]?.v || 0;
 
-    res.render('admin', { games, orders, users, coupons, stats });
+    res.render('admin', {
+      games, orders, users, coupons, stats,
+      onayHata: req.query.onayHata || null,
+      onayBasarili: req.query.onayBasarili || null
+    });
     return;
   } catch (err) {
     console.error('⚠️ Admin paneli sorgu uyarısı:', err.message);
   }
 
-  res.render('admin', { games: [], orders: [], users: [], coupons: [], stats });
+  res.render('admin', { games: [], orders: [], users: [], coupons: [], stats, onayHata: req.query.onayHata || null, onayBasarili: null });
 });
 
 // ── Kupon Ekle ───────────────────────────────────────────────────────
@@ -188,13 +192,14 @@ router.post('/siparis/:id/onayla', requireAdmin, async (req, res) => {
     }
     await cli.query('COMMIT');
     console.log(`✅ Sipariş #${orderId} onaylandı ve user_library kütüphanesine eklendi.`);
+    return res.redirect('/admin?onayBasarili=' + orderId);
   } catch (e) {
     await cli.query('ROLLBACK');
-    console.error('Sipariş onay hatası:', e);
+    console.error('❌ Sipariş onay hatası (işlem GERİ ALINDI, kütüphaneye eklenmedi):', e);
+    return res.redirect('/admin?onayHata=' + encodeURIComponent('Sipariş #' + orderId + ' onaylanamadı: ' + e.message));
   } finally {
     cli.release();
   }
-  res.redirect('/admin');
 });
 
 // ── Admin: Kullanıcıya Doğrudan Oyun Tanımla (E-posta ile) ───────────

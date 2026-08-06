@@ -152,6 +152,7 @@ router.get('/odeme/beklemede/:id', requireAuth, async (req, res) => {
     iban: process.env.BANK_IBAN || '',
     bankName: process.env.BANK_NAME || '',
     bankOwner: process.env.BANK_OWNER || '',
+    hata: req.query.hata || null,
   });
 });
 
@@ -186,13 +187,14 @@ router.post('/odeme/beklemede/:id/hizli-onay', requireAuth, async (req, res) => 
       }
     }
     await cli.query('COMMIT');
+    return res.redirect('/profil/kutuphanem');
   } catch (e) {
     await cli.query('ROLLBACK');
-    console.error('Hızlı onay hatası:', e);
+    console.error('❌ Hızlı onay hatası (işlem GERİ ALINDI, kütüphaneye eklenmedi):', e);
+    return res.redirect('/odeme/beklemede/' + orderId + '?hata=' + encodeURIComponent(e.message));
   } finally {
     cli.release();
   }
-  res.redirect('/profil/kutuphanem');
 });
 
 router.get('/odeme/basarili', requireAuth, (req, res) => { res.locals.title = 'Sipariş Onayı'; res.render('success'); });
