@@ -1,7 +1,30 @@
 </main>
 <footer class="footer">
-  <div>© 2026 Reyiz Market · reyizmarket.click</div>
-  <div>Node.js · Express · PostgreSQL</div>
+  <div class="foot-col">
+    <a class="logo" href="/">⚡ Reyiz<span>Market</span></a>
+    <p>TikTok LIVE yayıncıları için Node.js tabanlı interaktif oyunların dijital mağazası.</p>
+  </div>
+  <div class="foot-col">
+    <b>Mağaza</b>
+    <a href="/oyunlar">Oyunlar</a>
+    <a href="/sepet">Sepet</a>
+    <a href="/kayit">Üye Ol</a>
+  </div>
+  <div class="foot-col">
+    <b>Destek</b>
+    <a href="#nasil">Nasıl Çalışır?</a>
+    <a href="/profil/kutuphanem">Kütüphanem</a>
+    <span>destek@reyizmarket.click</span>
+  </div>
 </footer>
+<div class="foot-bottom">© 2026 Reyiz Market · reyizmarket.click · Tüm hakları saklıdır.</div>
+<script>
+  document.querySelector('.burger').addEventListener('click', function () {
+    document.body.classList.toggle('menu-open');
+  });
+  document.querySelectorAll('.faq-q').forEach(function (q) {
+    q.addEventListener('click', function () { q.parentElement.classList.toggle('open'); });
+  });
+</script>
 </body>
 </html>
