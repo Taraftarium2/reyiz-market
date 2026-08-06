@@ -3,31 +3,46 @@ const db = require('../db');
 
 router.get('/', async (req, res) => {
   res.locals.title = 'Reyiz Market · TikTok LIVE Oyunları';
-  const featured = (await db.query('SELECT * FROM games WHERE featured ORDER BY created_at DESC LIMIT 4')).rows;
-  const latest = (await db.query('SELECT * FROM games ORDER BY created_at DESC LIMIT 6')).rows;
-  const tags = (await db.query('SELECT DISTINCT tag FROM games')).rows.map((r) => r.tag);
+  let featured = [], latest = [], tags = [];
+  try {
+    featured = (await db.query('SELECT * FROM games WHERE featured = true ORDER BY created_at DESC LIMIT 4')).rows;
+    latest = (await db.query('SELECT * FROM games ORDER BY created_at DESC LIMIT 6')).rows;
+    tags = (await db.query('SELECT DISTINCT tag FROM games WHERE tag IS NOT NULL')).rows.map((r) => r.tag);
+  } catch (e) {
+    console.error('Anasayfa sorgu uyarısı:', e.message);
+  }
   res.render('index', { featured, latest, tags });
 });
 
 router.get('/oyunlar', async (req, res) => {
   res.locals.title = 'Oyun Kataloğu';
   const { q, tag } = req.query;
-  let sql = 'SELECT * FROM games WHERE 1=1';
-  const params = [];
-  if (q) { params.push('%' + q + '%'); sql += ` AND (title ILIKE $${params.length} OR description ILIKE $${params.length})`; }
-  if (tag) { params.push(tag); sql += ` AND tag = $${params.length}`; }
-  sql += ' ORDER BY created_at DESC';
-  const games = (await db.query(sql, params)).rows;
-  const tags = (await db.query('SELECT DISTINCT tag FROM games')).rows.map((r) => r.tag);
-  res.render('games', { games, tags, q, tag });
+  let games = [], tags = [];
+  try {
+    let sql = 'SELECT * FROM games WHERE 1=1';
+    const params = [];
+    if (q) { params.push('%' + q + '%'); sql += ` AND (title ILIKE $${params.length} OR description ILIKE $${params.length})`; }
+    if (tag) { params.push(tag); sql += ` AND tag = $${params.length}`; }
+    sql += ' ORDER BY created_at DESC';
+    games = (await db.query(sql, params)).rows;
+    tags = (await db.query('SELECT DISTINCT tag FROM games WHERE tag IS NOT NULL')).rows.map((r) => r.tag);
+  } catch (e) {
+    console.error('Oyunlar sorgu uyarısı:', e.message);
+  }
+  res.render('game', { games, tags, q, tag });
 });
 
 router.get('/oyunlar/:slug', async (req, res) => {
-  const r = await db.query('SELECT * FROM games WHERE slug=$1', [req.params.slug]);
-  const game = r.rows[0];
-  if (!game) return res.status(404).render('error', { message: 'Oyun bulunamadı.', status: 404 });
-  res.locals.title = game.title;
-  res.render('game', { game });
+  try {
+    const r = await db.query('SELECT * FROM games WHERE slug=$1', [req.params.slug]);
+    const game = r.rows[0];
+    if (!game) return res.status(404).render('error', { message: 'Oyun bulunamadı.', status: 404 });
+    res.locals.title = game.title;
+    return res.render('game', { games: [game], tags: [game.tag], q: '', tag: '' });
+  } catch (e) {
+    console.error('Oyun detay uyarısı:', e.message);
+    return res.status(404).render('error', { message: 'Oyun bulunamadı.', status: 404 });
+  }
 });
 
 module.exports = router;
