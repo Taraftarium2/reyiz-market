@@ -8,7 +8,8 @@ const { STORAGE_DIR } = require('./storage');
 const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
 
 async function main() {
-  fs.mkdirSync(STORAGE_DIR, { recursive: true });
+  const targetStorageDir = (STORAGE_DIR && String(STORAGE_DIR).trim() !== '') ? STORAGE_DIR : path.join(__dirname, 'storage');
+  fs.mkdirSync(targetStorageDir, { recursive: true });
   await db.query(schema);
 
   // Admin hesabı

@@ -26,8 +26,9 @@ app.get('/health', async (req, res) => {
 });
 
 // storage klasörünün var olduğundan emin ol
-fs.mkdirSync(STORAGE_DIR, { recursive: true });
-fs.writeFileSync(path.join(STORAGE_DIR, '.gitkeep'), '');
+const targetStorageDir = (STORAGE_DIR && String(STORAGE_DIR).trim() !== '') ? STORAGE_DIR : path.join(__dirname, 'storage');
+fs.mkdirSync(targetStorageDir, { recursive: true });
+fs.writeFileSync(path.join(targetStorageDir, '.gitkeep'), '');
 
 // Tüm istekler için ortak veriler (kullanıcı, sepet sayısı, başlık)
 app.use((req, res, next) => {

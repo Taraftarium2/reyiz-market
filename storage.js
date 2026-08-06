@@ -2,7 +2,9 @@ const path = require('path');
 const crypto = require('crypto');
 const fs = require('fs');
 
-const STORAGE_DIR = process.env.STORAGE_DIR || path.join(__dirname, 'storage');
+const STORAGE_DIR = (process.env.STORAGE_DIR && String(process.env.STORAGE_DIR).trim() !== '')
+  ? path.resolve(process.env.STORAGE_DIR)
+  : path.join(__dirname, 'storage');
 const SIGN_SECRET = process.env.SIGN_SECRET || process.env.JWT_SECRET || 'signed-url-secret';
 const DOWNLOAD_TTL_MS = 10 * 60 * 1000; // 10 dakika geçerli
 
