@@ -6,7 +6,7 @@ const STORAGE_DIR = (process.env.STORAGE_DIR && String(process.env.STORAGE_DIR).
   ? path.resolve(process.env.STORAGE_DIR)
   : path.join(__dirname, 'storage');
 const SIGN_SECRET = process.env.SIGN_SECRET || process.env.JWT_SECRET || 'signed-url-secret';
-const DOWNLOAD_TTL_MS = 10 * 60 * 1000; // 10 dakika geçerli
+const DOWNLOAD_TTL_MS = 24 * 60 * 60 * 1000; // 24 saat geçerli
 
 const accessKey = process.env.R2_ACCESS_KEY_ID || process.env.R2_ACCESS_KEY;
 const secretKey = process.env.R2_SECRET_ACCESS_KEY || process.env.R2_SECRET_KEY;
@@ -23,8 +23,7 @@ if (endpoint) {
 }
 
 function isR2Configured() {
-  const ok = !!(endpoint && accessKey && secretKey && bucketName);
-  return ok;
+  return !!(endpoint && accessKey && secretKey && bucketName);
 }
 
 // S3/R2 istemcisi
@@ -76,38 +75,36 @@ async function uploadToR2(fileKey, localFilePath) {
       ContentType: 'application/zip'
     });
     await s3.client.send(cmd);
-    console.log(`✅ Dosya başariyla Cloudflare R2 Bucket'ına aktarıldı: ${fileKey}`);
+    console.log(`✅ Dosya başarıyla Cloudflare R2 Bucket'ına aktarıldı: ${fileKey}`);
     return true;
   } catch (e) {
-    console.error('❌ Cloudflare R2 yükleme hatası:', e.message, e);
+    console.error('❌ Cloudflare R2 yükleme hatası:', e.message);
     return false;
   }
 }
 
-async function getR2SignedUrl(fileKey) {
-  if (!s3 || !bucketName) return null;
+// R2'den dosyayı sunucu üzerinden güvenle çekme
+async function fetchFileFromR2(fileKey) {
+  if (!isR2Configured() || !s3) return null;
   try {
     const cmd = new s3.GetObjectCommand({ Bucket: bucketName, Key: fileKey });
-    const url = await s3.getSignedUrl(s3.client, cmd, { expiresIn: 600 });
-    return url;
+    const response = await s3.client.send(cmd);
+    return response.Body; // Stream / ByteArray
   } catch (e) {
-    console.error('Cloudflare R2 imzalı URL oluşturma hatası:', e.message);
+    console.error('❌ R2 Dosya İndirme Hatası:', e.message);
     return null;
   }
 }
 
-// Local veya R2 modunda çalışan downloadUrl üretici
-async function downloadUrl(game, reqHost) {
-  if (isR2Configured()) {
-    const r2Url = await getR2SignedUrl(game.file_key);
-    if (r2Url) return r2Url;
-  }
+// Güvenli yerel sunucu indirme adresi üretici
+function downloadUrl(game, reqHost) {
   const { exp, sig } = signToken(game.id);
-  return `${reqHost || ''}/indir/${game.id}?exp=${exp}&sig=${sig}`;
+  const base = reqHost ? reqHost.replace(/\/+$/, '') : '';
+  return `${base}/indir/${game.id}?exp=${exp}&sig=${sig}`;
 }
 
 function filePath(fileKey) {
   return path.join(STORAGE_DIR, fileKey);
 }
 
-module.exports = { STORAGE_DIR, s3, isR2Configured, uploadToR2, getR2SignedUrl, downloadUrl, verify, signToken, filePath };
+module.exports = { STORAGE_DIR, s3, isR2Configured, uploadToR2, fetchFileFromR2, downloadUrl, verify, signToken, filePath };
