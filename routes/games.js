@@ -3,16 +3,16 @@ const db = require('../db');
 const { requireAuth } = require('../auth');
 
 router.get('/', async (req, res) => {
-  res.locals.title = 'Reyiz Market · TikTok LIVE Oyunları';
-  let featured = [], latest = [], tags = [];
+  res.locals.title = 'Reyiz Market · TikTok LIVE İnteraktif Oyun Mağazası';
+  let games = [];
   try {
-    featured = (await db.query('SELECT * FROM games WHERE featured = true ORDER BY created_at DESC LIMIT 4')).rows;
-    latest = (await db.query('SELECT * FROM games ORDER BY created_at DESC LIMIT 6')).rows;
-    tags = (await db.query('SELECT DISTINCT tag FROM games WHERE tag IS NOT NULL')).rows.map((r) => r.tag);
+    // Tüm oyunları getir (Öne çıkanlar üstte görünür)
+    const r = await db.query('SELECT * FROM games ORDER BY featured DESC, created_at DESC LIMIT 20');
+    games = r.rows;
   } catch (e) {
     console.error('Anasayfa sorgu uyarısı:', e.message);
   }
-  res.render('index', { featured, latest, tags });
+  res.render('index', { games, featured: games });
 });
 
 // Rehber Sayfası (/rehber)
@@ -48,75 +48,71 @@ router.get('/api/recent-sales', async (req, res) => {
   }
 });
 
-// Oyun Kataloğu (/oyunlar) — Gelişmiş Filtreleme & Sıralama
-router.get('/oyunlar', async (req, res) => {
-  res.locals.title = 'Oyun Kataloğu';
-  const { q, tag, sort } = req.query;
-  let games = [], tags = [];
-  try {
-    let sql = 'SELECT * FROM games WHERE 1=1';
-    const params = [];
-    if (q) { params.push('%' + q + '%'); sql += ` AND (title ILIKE $${params.length} OR description ILIKE $${params.length})`; }
-    if (tag) { params.push(tag); sql += ` AND tag = $${params.length}`; }
-    
-    if (sort === 'price_asc') {
-      sql += ' ORDER BY price ASC';
-    } else if (sort === 'price_desc') {
-      sql += ' ORDER BY price DESC';
-    } else if (sort === 'popular') {
-      sql += ' ORDER BY featured DESC, created_at DESC';
-    } else {
-      sql += ' ORDER BY created_at DESC';
-    }
-
-    games = (await db.query(sql, params)).rows;
-    tags = (await db.query('SELECT DISTINCT tag FROM games WHERE tag IS NOT NULL')).rows.map((r) => r.tag);
-  } catch (e) {
-    console.error('Oyunlar sorgu uyarısı:', e.message);
-  }
-  res.render('game', { games, tags, q, tag, sort });
-});
-
-// Oyun Detay Sayfası (/oyunlar/:slug) & Yorumlar
+// Oyun Detay Sayfası
 router.get('/oyunlar/:slug', async (req, res) => {
   try {
-    const r = await db.query('SELECT * FROM games WHERE slug=$1', [req.params.slug]);
+    const r = await db.query('SELECT * FROM games WHERE slug = $1', [req.params.slug]);
     const game = r.rows[0];
     if (!game) return res.status(404).render('error', { message: 'Oyun bulunamadı.', status: 404 });
+    res.locals.title = game.title;
     
-    // Yorumlar
+    // Yorumları çek
     let reviews = [];
     try {
-      reviews = (await db.query('SELECT * FROM reviews WHERE game_id=$1 ORDER BY created_at DESC LIMIT 20', [game.id])).rows;
+      reviews = (await db.query(`
+        SELECT rev.*, u.name AS user_name, u.email
+        FROM reviews rev JOIN users u ON u.id = rev.user_id
+        WHERE rev.game_id = $1 ORDER BY rev.created_at DESC
+      `, [game.id])).rows;
     } catch(e) {}
 
-    // Benzer oyunlar
-    const related = (await db.query('SELECT * FROM games WHERE id != $1 ORDER BY RANDOM() LIMIT 3', [game.id])).rows;
-    
-    res.locals.title = game.title + ' — TikTok LIVE Oyunu';
-    return res.render('detail', { game, related, reviews });
+    res.render('detail', { game, reviews });
   } catch (e) {
-    console.error('Oyun detay uyarısı:', e.message);
-    return res.status(404).render('error', { message: 'Oyun bulunamadı.', status: 404 });
+    console.error('Oyun detay hatası:', e);
+    res.status(500).render('error', { message: 'Bir hata oluştu.', status: 500 });
   }
 });
 
-// Oyuna Yorum Yap (POST /oyunlar/:slug/yorum)
+// Yorum Ekle
 router.post('/oyunlar/:slug/yorum', requireAuth, async (req, res) => {
   const { rating, comment } = req.body;
   try {
-    const r = await db.query('SELECT id FROM games WHERE slug=$1', [req.params.slug]);
-    const game = r.rows[0];
-    if (game) {
+    const g = (await db.query('SELECT id FROM games WHERE slug = $1', [req.params.slug])).rows[0];
+    if (g && comment) {
       await db.query(
-        'INSERT INTO reviews (game_id, user_id, user_name, rating, comment) VALUES ($1,$2,$3,$4,$5)',
-        [game.id, req.user.id, req.user.name || req.user.email.split('@')[0], Math.min(5, Math.max(1, Number(rating || 5))), comment || '']
+        'INSERT INTO reviews (user_id, game_id, rating, comment) VALUES ($1, $2, $3, $4)',
+        [req.user.id, g.id, Number(rating || 5), comment.trim()]
       );
     }
-  } catch(e) {
+  } catch (e) {
     console.error('Yorum ekleme hatası:', e);
   }
   res.redirect('/oyunlar/' + req.params.slug);
+});
+
+// Tüm Oyunlar Mağazası (/oyunlar)
+router.get('/oyunlar', async (req, res) => {
+  res.locals.title = 'Tüm İnteraktif Oyunlar';
+  const { q, sort } = req.query;
+  try {
+    let sql = 'SELECT * FROM games WHERE 1=1';
+    const params = [];
+    if (q) {
+      params.push(`%${q}%`);
+      sql += ` AND (LOWER(title) LIKE LOWER($${params.length}) OR LOWER(description) LIKE LOWER($${params.length}) OR LOWER(tag) LIKE LOWER($${params.length}))`;
+    }
+
+    if (sort === 'price_asc') sql += ' ORDER BY price ASC';
+    else if (sort === 'price_desc') sql += ' ORDER BY price DESC';
+    else if (sort === 'popular') sql += ' ORDER BY featured DESC, price DESC';
+    else sql += ' ORDER BY created_at DESC';
+
+    const games = (await db.query(sql, params)).rows;
+    res.render('game', { games, query: q, sort });
+  } catch (e) {
+    console.error('Mağaza sorgu hatası:', e);
+    res.render('game', { games: [], query: q, sort });
+  }
 });
 
 module.exports = router;
