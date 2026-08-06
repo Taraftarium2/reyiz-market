@@ -30,6 +30,14 @@
     </div>
   <% } %>
 
+  <!-- ADMIN İÇİN VERİTABANI HATA GÖSTERİMİ -->
+  <% if (typeof dbHata !== 'undefined' && dbHata) { %>
+    <div class="alert" style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.35);color:#f87171;border-radius:var(--radius);padding:14px 18px;margin-bottom:20px">
+      <strong>❌ (Sadece admin görür) Kütüphane sorgusu hata verdi, bu yüzden liste boş görünüyor:</strong>
+      <div style="font-size:.82rem;margin-top:6px;opacity:.9"><%= dbHata %></div>
+    </div>
+  <% } %>
+
   <!-- OYUN LİSTESİ -->
   <% if (!games.length) { %>
     <div class="empty">
