@@ -21,10 +21,11 @@ router.get('/profil/kutuphanem', requireAuth, async (req, res) => {
     }));
 
     // Bekleyen sipariş sayısı kontrolü
-    const pendingOrders = (await db.query(
-      `SELECT COUNT(*) AS v FROM orders WHERE user_id=$1 AND status='pending'`,
-      [req.user.id]
-    )).rows[0]?.v || 0;
+
+const pendingOrders = (await db.query(
+    `SELECT COUNT(*) AS v FROM orders WHERE user_id=$1 AND status='pending'`,
+    [req.user.id]
+)).rows[0]?.v || 0;
 
     res.render('library', { games, pendingOrders: Number(pendingOrders), dbHata: null });
   } catch (e) {
