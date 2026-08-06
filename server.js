@@ -12,6 +12,7 @@ const { STORAGE_DIR } = require('./storage');
 
 const app = express();
 app.disable('x-powered-by');
+app.set('trust proxy', 1); // Railway / Cloudflare proxy için doğru protocol/host
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'))
 app.use(express.urlencoded({ extended: true }));
@@ -86,6 +87,7 @@ try {
   const s = storage.getR2ConfigStatus ? storage.getR2ConfigStatus() : { configured: storage.isR2Configured() };
   console.log('🔧 R2 Durumu (başlangıç):', JSON.stringify(s));
   console.log('🔧 PAYMENT_MODE:', process.env.PAYMENT_MODE || 'manual (varsayılan)');
+  console.log('🔧 INSTANT_DELIVERY:', process.env.INSTANT_DELIVERY !== 'false' ? 'true (ödeme anında kütüphaneye ekle)' : 'false (admin onayı gerekli)');
   if (!s.configured) {
     console.warn('⚠️ UYARI: R2 yapılandırılmadı! Dosyalar sadece yerel diskte saklanacak. Railway/Render gibi ephemeral diskte dosyalar restart sonrası kaybolabilir.');
     console.warn('   Çözüm: Railway dashboard > Variables > R2_ENDPOINT, R2_ACCESS_KEY, R2_SECRET_KEY, R2_BUCKET ekleyin.');
