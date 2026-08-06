@@ -1,0 +1,25 @@
+<%- include('partials/header') %>
+<section class="detail">
+  <div class="cover big" style="background:<%= game.cover_image_url || 'linear-gradient(135deg,#8b5cf6,#f97316)' %>">
+    <% if (game.cover_image_url) { %><img src="<%= game.cover_image_url %>" alt=""><% } %>
+    <span class="tag"><%= game.tag %></span>
+  </div>
+  <div class="detail-body">
+    <h1><%= game.title %></h1>
+    <p class="desc"><%= game.description %></p>
+    <div class="reqs">
+      <p>🟣 <b>Node.js:</b> v<%= game.node_version || '18' %>+</p>
+      <p>📺 <b>Tür:</b> TikTok LIVE uyumlu · dijital indirme</p>
+      <p>⚡ <b>Teslimat:</b> Anında, Kütüphanem üzerinden</p>
+    </div>
+    <div class="buyrow">
+      <span class="price big">₺<%= Number(game.price).toFixed(0) %></span>
+      <form method="post" action="/sepet/ekle">
+        <input type="hidden" name="game_id" value="<%= game.id %>">
+        <button class="btn big">Sepete Ekle</button>
+      </form>
+    </div>
+    <div class="mini-steps"><p>🛒 Sepete ekle → 💳 Öde → ⬇️ Kütüphanem'den indir</p></div>
+  </div>
+</section>
+<%- include('partials/footer') %>
