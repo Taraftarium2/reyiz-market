@@ -11,10 +11,20 @@ const DOWNLOAD_TTL_MS = 10 * 60 * 1000; // 10 dakika geçerli
 const accessKey = process.env.R2_ACCESS_KEY_ID || process.env.R2_ACCESS_KEY;
 const secretKey = process.env.R2_SECRET_ACCESS_KEY || process.env.R2_SECRET_KEY;
 const bucketName = process.env.R2_BUCKET_NAME || process.env.R2_BUCKET;
-const endpoint = process.env.R2_ENDPOINT;
+let endpoint = process.env.R2_ENDPOINT;
+
+// Endpoint başında https:// yoksa ekle, sonunda / varsa temizle
+if (endpoint) {
+  endpoint = endpoint.trim();
+  if (!endpoint.startsWith('http://') && !endpoint.startsWith('https://')) {
+    endpoint = 'https://' + endpoint;
+  }
+  endpoint = endpoint.replace(/\/+$/, '');
+}
 
 function isR2Configured() {
-  return !!(endpoint && accessKey && secretKey && bucketName);
+  const ok = !!(endpoint && accessKey && secretKey && bucketName);
+  return ok;
 }
 
 // S3/R2 istemcisi
@@ -53,19 +63,23 @@ function verify(gameId, exp, sig) {
 }
 
 async function uploadToR2(fileKey, localFilePath) {
-  if (!isR2Configured() || !s3) return false;
+  if (!isR2Configured() || !s3) {
+    console.error('❌ Cloudflare R2 yapılandırılmadığı için yükleme atlandı. isR2Configured:', isR2Configured());
+    return false;
+  }
   try {
-    const fileStream = fs.createReadStream(localFilePath);
+    const fileBuffer = fs.readFileSync(localFilePath);
     const cmd = new s3.PutObjectCommand({
       Bucket: bucketName,
       Key: fileKey,
-      Body: fileStream
+      Body: fileBuffer,
+      ContentType: 'application/zip'
     });
     await s3.client.send(cmd);
-    console.log(`✅ Yüklenen dosya Cloudflare R2 Bucket'ına aktarıldı: ${fileKey}`);
+    console.log(`✅ Dosya başariyla Cloudflare R2 Bucket'ına aktarıldı: ${fileKey}`);
     return true;
   } catch (e) {
-    console.error('⚠️ Cloudflare R2 yükleme hatası:', e.message);
+    console.error('❌ Cloudflare R2 yükleme hatası:', e.message, e);
     return false;
   }
 }
