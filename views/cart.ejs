@@ -1,8 +1,8 @@
 <%- include('partials/header') %>
-<section class="section">
+<section class="section narrow">
   <h2>Sepetim</h2>
   <% if (!items.length) { %>
-    <p class="empty">Sepetin boş. <a href="/oyunlar">Oyunlara göz at</a>.</p>
+    <div class="empty"><p>Sepetin boş.</p><a class="btn" href="/oyunlar">Oyunlara göz at</a></div>
   <% } else { %>
     <div class="cartlist">
       <% items.forEach(function (g) { %>
@@ -14,7 +14,7 @@
       <% }) %>
     </div>
     <div class="total">Toplam: <b>₺<%= total.toFixed(0) %></b></div>
-    <a class="btn big" href="/odeme">Ödemeye Geç</a>
+    <a class="btn big" href="/odeme">Ödemeye Geç →</a>
   <% } %>
 </section>
 <%- include('partials/footer') %>
