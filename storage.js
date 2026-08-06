@@ -2,32 +2,39 @@ const path = require('path');
 const crypto = require('crypto');
 const fs = require('fs');
 
-const STORAGE_DIR = process.env.STORAGE_DIR || path.join(__dirname, 'storage');
+const STORAGE_DIR = (process.env.STORAGE_DIR && String(process.env.STORAGE_DIR).trim() !== '')
+  ? path.resolve(process.env.STORAGE_DIR)
+  : path.join(__dirname, 'storage');
 const SIGN_SECRET = process.env.SIGN_SECRET || process.env.JWT_SECRET || 'signed-url-secret';
 const DOWNLOAD_TTL_MS = 10 * 60 * 1000; // 10 dakika geçerli
 
-// S3/R2 istemcisi — anahtarlar eksikse null kalır ve local mod kullanılır
-const s3 =
-  process.env.R2_ENDPOINT && process.env.R2_ACCESS_KEY && process.env.R2_SECRET_KEY && process.env.R2_BUCKET
-    ? (() => {
-        const {
-          S3Client,
-          GetObjectCommand,
-          PutObjectCommand,
-          DeleteObjectCommand,
-        } = require('@aws-sdk/client-s3');
+const accessKey = process.env.R2_ACCESS_KEY_ID || process.env.R2_ACCESS_KEY;
+const secretKey = process.env.R2_SECRET_ACCESS_KEY || process.env.R2_SECRET_KEY;
+const bucketName = process.env.R2_BUCKET_NAME || process.env.R2_BUCKET;
+const endpoint = process.env.R2_ENDPOINT;
+
+function isR2Configured() {
+  return !!(endpoint && accessKey && secretKey && bucketName);
+}
+
+// S3/R2 istemcisi
+const s3 = isR2Configured()
+  ? (() => {
+      try {
+        const { S3Client, GetObjectCommand, PutObjectCommand } = require('@aws-sdk/client-s3');
         const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
         const client = new S3Client({
           region: 'auto',
-          endpoint: process.env.R2_ENDPOINT,
-          credentials: {
-            accessKeyId: process.env.R2_ACCESS_KEY,
-            secretAccessKey: process.env.R2_SECRET_KEY,
-          },
+          endpoint: endpoint,
+          credentials: { accessKeyId: accessKey, secretAccessKey: secretKey },
         });
-        return { client, GetObjectCommand, PutObjectCommand, DeleteObjectCommand, getSignedUrl };
-      })()
-    : null;
+        return { client, GetObjectCommand, PutObjectCommand, getSignedUrl };
+      } catch (e) {
+        console.error('⚠️ AWS S3 SDK yükleme uyarısı:', e.message);
+        return null;
+      }
+    })()
+  : null;
 
 function signToken(gameId) {
   const exp = Date.now() + DOWNLOAD_TTL_MS;
@@ -45,61 +52,48 @@ function verify(gameId, exp, sig) {
   return crypto.timingSafeEqual(a, b);
 }
 
-// file_key'i yol dışına çıkabilecek karakterlerden temizle (güvenlik)
-function filePath(fileKey) {
-  const safe = String(fileKey).replace(/[^a-zA-Z0-9._\-\/]/g, '');
-  return path.join(STORAGE_DIR, safe);
-}
-
-// R2 modu: PutObjectCommand ile yükle | Local mod: diske yaz
-async function uploadFile(buffer, fileKey, contentType = 'application/zip') {
-  if (s3) {
+async function uploadToR2(fileKey, localFilePath) {
+  if (!isR2Configured() || !s3) return false;
+  try {
+    const fileStream = fs.createReadStream(localFilePath);
     const cmd = new s3.PutObjectCommand({
-      Bucket: process.env.R2_BUCKET,
+      Bucket: bucketName,
       Key: fileKey,
-      Body: buffer,
-      ContentType: contentType,
+      Body: fileStream
     });
     await s3.client.send(cmd);
-    return fileKey;
-  }
-  const fp = filePath(fileKey);
-  fs.mkdirSync(path.dirname(fp), { recursive: true });
-  fs.writeFileSync(fp, buffer);
-  return fileKey;
-}
-
-// R2 modu: DeleteObjectCommand | Local mod: diskten sil
-async function deleteFile(fileKey) {
-  if (!fileKey) return;
-  try {
-    if (s3) {
-      const cmd = new s3.DeleteObjectCommand({ Bucket: process.env.R2_BUCKET, Key: fileKey });
-      await s3.client.send(cmd);
-      return;
-    }
-    const fp = filePath(fileKey);
-    if (fs.existsSync(fp)) fs.unlinkSync(fp);
+    console.log(`✅ Yüklenen dosya Cloudflare R2 Bucket'ına aktarıldı: ${fileKey}`);
+    return true;
   } catch (e) {
-    console.error('Dosya silinemedi:', fileKey, e.message);
+    console.error('⚠️ Cloudflare R2 yükleme hatası:', e.message);
+    return false;
   }
 }
 
-// Local mod: uygulama üzerinden imzalı indirme linki
-// R2 modu: S3 presigned URL (10 dk) — tarayıcıya ".zip indir" başlığı ile
+async function getR2SignedUrl(fileKey) {
+  if (!s3 || !bucketName) return null;
+  try {
+    const cmd = new s3.GetObjectCommand({ Bucket: bucketName, Key: fileKey });
+    const url = await s3.getSignedUrl(s3.client, cmd, { expiresIn: 600 });
+    return url;
+  } catch (e) {
+    console.error('Cloudflare R2 imzalı URL oluşturma hatası:', e.message);
+    return null;
+  }
+}
+
+// Local veya R2 modunda çalışan downloadUrl üretici
 async function downloadUrl(game, reqHost) {
-  if (s3) {
-    const safeSlug = String(game.slug || 'oyun').replace(/[^a-zA-Z0-9._-]/g, '-');
-    const cmd = new s3.GetObjectCommand({
-      Bucket: process.env.R2_BUCKET,
-      Key: game.file_key,
-      ResponseContentDisposition: `attachment; filename="${safeSlug}.zip"`,
-      ResponseContentType: 'application/zip',
-    });
-    return await s3.getSignedUrl(s3.client, cmd, { expiresIn: 600 });
+  if (isR2Configured()) {
+    const r2Url = await getR2SignedUrl(game.file_key);
+    if (r2Url) return r2Url;
   }
   const { exp, sig } = signToken(game.id);
-  return `${reqHost}/indir/${game.id}?exp=${exp}&sig=${sig}`;
+  return `${reqHost || ''}/indir/${game.id}?exp=${exp}&sig=${sig}`;
 }
 
-module.exports = { STORAGE_DIR, s3, uploadFile, deleteFile, downloadUrl, verify, signToken, filePath };
+function filePath(fileKey) {
+  return path.join(STORAGE_DIR, fileKey);
+}
+
+module.exports = { STORAGE_DIR, s3, isR2Configured, uploadToR2, getR2SignedUrl, downloadUrl, verify, signToken, filePath };
