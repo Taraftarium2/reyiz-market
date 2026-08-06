@@ -1,0 +1,8 @@
+[providers]
+providers = ["node"]
+
+[build]
+cmds = ["npm ci --omit=dev"]
+
+[start]
+cmd = "node server.js"
