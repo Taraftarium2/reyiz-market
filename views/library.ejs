@@ -1,70 +1,78 @@
-const express = require('express');
-const router = express.Router();
-const db = require('../db');
-const storage = require('../storage');
-const { requireAuth } = require('../middlewares/auth');
+<%- include('partials/header') %>
 
-// 1. Kütüphanem Sayfası
-router.get('/profil/kutuphanem', requireAuth, async (req, res) => {
-    try {
-        const result = await db.query(
-            `SELECT g.*, ul.purchased_at, ul.download_count
-             FROM user_library ul 
-             JOIN games g ON g.id = ul.game_id
-             WHERE ul.user_id = $1 
-             ORDER BY ul.purchased_at DESC`,
-            [req.user.id]
-        );
+<section class="section">
+  <div class="section-title" style="text-align:left;margin-bottom:28px">
+    <h2>📚 Kütüphanem</h2>
+    <p>Satın aldığın ve onaylanan oyunlar — dilediğin zaman bilgisayarına indir</p>
+  </div>
 
-        const games = result.rows.map((g) => ({
-            ...g,
-            downloadUrl: storage.downloadUrl(g, req.protocol + '://' + req.get('host'))
-        }));
+  <!-- ADMIN TEST BİLGİ KUTUSU -->
+  <% if (user && user.role === 'admin') { %>
+    <div style="background:var(--card2);border:1px solid var(--purple);border-radius:var(--radius);padding:18px 22px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px">
+      <div>
+        <div style="font-weight:700;color:var(--purple2);font-size:.95rem">⚙ Admin Test Modu</div>
+        <div style="font-size:.85rem;color:var(--muted);margin-top:2px">Admin olarak indirme sistemini test etmek için katalogdaki tüm oyunları kütüphanenize tanımlayabilirsiniz.</div>
+      </div>
+      <form method="post" action="/admin/kutuphaneme-ekle" style="margin:0">
+        <button class="btn sm" type="submit">+ Tüm Oyunları Kütüphaneme Ekle (Test)</button>
+      </form>
+    </div>
+  <% } %>
 
-        res.render('library', { games });
-    } catch (err) {
-        console.error(err);
-        res.status(500).render('error', { message: 'Kütüphane yüklenirken bir hata oluştu.' });
-    }
-});
+  <!-- ONAY BEKLEYEN SİPARİŞ UYARISI -->
+  <% if (typeof pendingOrders !== 'undefined' && pendingOrders > 0) { %>
+    <div class="alert" style="background:rgba(251,191,36,.12);border-color:rgba(251,191,36,.3);color:#fbbf24;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+      <div>
+        <strong>⏳ <%= pendingOrders %> adet havale siparişiniz onay bekliyor!</strong><br>
+        <span style="font-size:.85rem;opacity:.9">Admin havaleyi kontrol edip onayladığı an oyununuz burada <strong>⬇ İndir (.zip)</strong> butonuyla belirecektir.</span>
+      </div>
+      <a class="btn ghost sm" href="/siparislerim" style="color:#fbbf24;border-color:#fbbf24">📦 Siparişlerime Git →</a>
+    </div>
+  <% } %>
 
-// 2. Güvenli İndirme Endpoint'i
-router.get('/profil/kutuphanem/indir/:slug', requireAuth, async (req, res) => {
-    const { slug } = req.params;
+  <!-- ADMIN İÇİN VERİTABANI HATA GÖSTERİMİ -->
+  <% if (typeof dbHata !== 'undefined' && dbHata) { %>
+    <div class="alert" style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.35);color:#f87171;border-radius:var(--radius);padding:14px 18px;margin-bottom:20px">
+      <strong>❌ (Sadece admin görür) Kütüphane sorgusu hata verdi, bu yüzden liste boş görünüyor:</strong>
+      <div style="font-size:.82rem;margin-top:6px;opacity:.9"><%= dbHata %></div>
+    </div>
+  <% } %>
 
-    try {
-        // Kullanıcının bu ürünü satın alıp almadığını doğrula
-        const result = await db.query(
-            `SELECT g.*, ul.id as lib_id
-             FROM user_library ul
-             JOIN games g ON g.id = ul.game_id
-             WHERE ul.user_id = $1 AND g.slug = $2`,
-            [req.user.id, slug]
-        );
+  <!-- OYUN LİSTESİ -->
+  <% if (!games.length) { %>
+    <div class="empty">
+      <div style="font-size:3rem;margin-bottom:12px">📚</div>
+      <h3 style="font-size:1.2rem;font-weight:700;margin-bottom:6px">Kütüphanenizde henüz onaylanmış bir oyun yok</h3>
+      <p style="color:var(--muted);font-size:.9rem;margin-bottom:18px">Satın aldığınız oyunlar admin onayladıktan sonra burada indirmeye açılır.</p>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <a class="btn" href="/oyunlar">🎮 Mağazaya Git</a>
+        <a class="btn ghost" href="/siparislerim">📦 Sipariş Durumumu Kontrol Et</a>
+      </div>
+    </div>
+  <% } else { %>
+    <div class="lib-grid">
+      <% games.forEach(function (g) { %>
+        <div class="lib-card">
+          <div class="lib-cover">
+            <% if (g.cover_image_url) { %>
+              <img src="<%= g.cover_image_url %>" alt="<%= g.title %>">
+            <% } else { %>
+              <div class="lib-cover-placeholder">🎮</div>
+            <% } %>
+          </div>
+          <div class="lib-body">
+            <h3><%= g.title %></h3>
+            <p class="lib-meta">
+              📥 <%= g.download_count %> kez indirildi &nbsp;·&nbsp;
+              <%= new Date(g.purchased_at).toLocaleDateString('tr-TR') %>
+            </p>
+            <a class="btn lib-dl" href="<%= g.downloadUrl %>" style="padding:12px;font-size:.95rem">⬇ İndir (<%= g.slug %>.zip)</a>
+            <p class="note" style="margin-top:8px">🔗 İndirme bağlantısı güvenlidir. Dilediğiniz zaman yeniden indirebilirsiniz.</p>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+</section>
 
-        if (result.rows.length === 0) {
-            return res.status(403).render('error', { 
-                message: 'Bu ürünü indirmek için satın almanız veya siparişinizin onaylanması gerekmektedir.' 
-            });
-        }
-
-        const game = result.rows[0];
-
-        // İndirme sayısını artır
-        await db.query(
-            'UPDATE user_library SET download_count = download_count + 1 WHERE id = $1',
-            [game.lib_id]
-        );
-
-        // Depolama servisinden dosya akışını alıp indir
-        const fileStream = await storage.getFileStream(game.file_key);
-        res.setHeader('Content-Disposition', `attachment; filename="${game.slug}.zip"`);
-        fileStream.pipe(res);
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).render('error', { message: 'İndirme işlemi sırasında bir hata oluştu.' });
-    }
-});
-
-module.exports = router;
+<%- include('partials/footer') %>
