@@ -1,14 +1,17 @@
 <%- include('partials/header') %>
+
 <section class="hero">
-  <div class="hero-inner">
-    <h1>TikTok LIVE <span>Oyunların</span> Burada</h1>
-    <p>Reyiz Market, yayınını interaktif hale getiren Node.js tabanlı oyunların dijital mağazası. Üye ol, satın al, <strong>Kütüphanem'den</strong> indir.</p>
-    <div class="cta">
-      <a class="btn big" href="/oyunlar">Oyunları Keşfet</a>
-      <a class="btn ghost" href="#nasil">Nasıl Çalışır</a>
-    </div>
-  </div>
   <div class="hero-glow"></div>
+  <div class="hero-inner">
+    <span class="pill">⚡ TikTok LIVE için dijital oyun mağazası</span>
+    <h1>TikTok LIVE <span>Oyunların</span> Burada</h1>
+    <p>Reyiz Market, yayınını interaktif hale getiren <strong>Node.js tabanlı oyunların</strong> dijital mağazası. Üye ol, satın al, <strong>Kütüphanem'den</strong> istediğin zaman indir.</p>
+    <div class="cta">
+      <a class="btn big" href="/oyunlar">Oyunları Keşfet →</a>
+      <a class="btn ghost big" href="#nasil">Nasıl Çalışır?</a>
+    </div>
+    <div class="hero-mini"><span class="live-dot"></span> CANLI YAYIN · 1.248 izleyici katılıyor</div>
+  </div>
 </section>
 
 <section class="stats">
@@ -19,25 +22,67 @@
 </section>
 
 <section class="section" id="oyunlar">
-  <h2>Öne Çıkan Oyunlar</h2>
+  <div class="sec-head">
+    <h2>Öne Çıkan Oyunlar</h2>
+    <a class="btn ghost" href="/oyunlar">Mağazaya Git →</a>
+  </div>
   <div class="grid">
     <% featured.forEach(function (g) { %><%- include('partials/gamecard', { game: g }) %><% }) %>
   </div>
-  <div class="center"><a class="btn ghost" href="/oyunlar">Tüm Oyunları Gör</a></div>
 </section>
 
 <section class="section dark" id="nasil">
   <h2>Nasıl Çalışır?</h2>
   <div class="steps">
-    <div class="step"><span>1</span><h4>Üye Ol</h4><p>E-posta + şifre ile hızlı kayıt.</p></div>
+    <div class="step"><span>1</span><h4>Üye Ol</h4><p>E-posta + şifre ile 30 saniyede kayıt.</p></div>
     <div class="step"><span>2</span><h4>Kataloğu İncele</h4><p>Oyunları keşfet, sepete ekle.</p></div>
-    <div class="step"><span>3</span><h4>Satın Al</h4><p>TL ile güvenli ödeme.</p></div>
+    <div class="step"><span>3</span><h4>Satın Al</h4><p>TL ile güvenli ödeme, anında onay.</p></div>
     <div class="step"><span>4</span><h4>Kütüphanem'den İndir</h4><p>Satın aldığın oyunları istediğin zaman indir.</p></div>
+  </div>
+</section>
+
+<section class="section">
+  <h2>Neden Reyiz Market?</h2>
+  <div class="features">
+    <div class="feat">⚡<h4>Anında Teslimat</h4><p>Ödeme onaylanır onaylanmaz oyun hesabına tanımlanır.</p></div>
+    <div class="feat">🔒<h4>Güvenli İndirme</h4><p>Süreli ve imzalı indirme linkleri — dosya yolu asla ifşa edilmez.</p></div>
+    <div class="feat">♾️<h4>Kalıcı Erişim</h4><p>Bir kez satın al, tekrar tekrar indir.</p></div>
+    <div class="feat">💳<h4>TL Ödeme</h4><p>iyzico ile kart ödemesi, Türk Lirası destekli.</p></div>
+    <div class="feat">🎮<h4>TikTok LIVE Uyumlu</h4><p>Tüm oyunlar Node.js tabanlı, yayına hazır.</p></div>
+    <div class="feat">✉️<h4>E-posta Bildirimi</h4><p>Satın alma onayı ve indirme hatırlatması.</p></div>
+  </div>
+</section>
+
+<section class="section">
+  <h2>Sık Sorulan Sorular</h2>
+  <div class="faq">
+    <div class="faq-item">
+      <button class="faq-q">Oyunlar nasıl teslim edilir? <span>+</span></button>
+      <div class="faq-a"><p>Ödeme onaylandığı anda oyun "Kütüphanem" sayfana eklenir. Oradan tek tıkla indirirsin.</p></div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q">İndirdiğim oyunu tekrar indirebilir miyim? <span>+</span></button>
+      <div class="faq-a"><p>Evet. Satın alma kalıcıdır; Kütüphanem'den istediğin zaman yeniden indirebilirsin. Her seferinde taze bir indirme linki üretilir.</p></div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q">Hangi ödeme yöntemleri geçerli? <span>+</span></button>
+      <div class="faq-a"><p>Türk Lirası ile kredi/banka kartı ödemesi (iyzico). Canlıya geçişte alternatif yöntemler eklenebilir.</p></div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q">Oyunu kurmak zor mu? <span>+</span></button>
+      <div class="faq-a"><p>Hayır. Zip içindeki README talimatlarını izle: <code>npm install</code> → <code>npm start</code>. Node.js kurulu olması yeterli.</p></div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q">İade var mı? <span>+</span></button>
+      <div class="faq-a"><p>Dijital ürünlerde indirme başladıktan sonra iade yapılmaz. Satın almadan önce oyun detayını incelemeni öneririz.</p></div>
+    </div>
   </div>
 </section>
 
 <section class="cta-band">
   <h2>Yayınını canlıya taşı 🚀</h2>
+  <p>Hemen üye ol, ilk oyununu Kütüphanem'den indir.</p>
   <a class="btn big" href="/kayit">Hemen Üye Ol</a>
 </section>
+
 <%- include('partials/footer') %>
