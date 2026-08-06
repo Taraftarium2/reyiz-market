@@ -711,7 +711,58 @@ a:hover { color: var(--text); }
 .faq-item.open .faq-answer { display: block; }
 .faq-item.open .faq-question { color: var(--purple2); }
 
-@media (max-width: 700px) {
-  .live-sim-body { grid-template-columns: 1fr; }
-  .sim-chat { max-height: 160px; }
+/* ── Cart Nav Badge & Animations ────────────────────────────── */
+.cart-nav-badge {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: var(--card2); border: 1px solid var(--border2);
+  padding: 6px 14px; border-radius: 20px; font-weight: 600; font-size: .88rem;
+  transition: all .2s ease; position: relative;
+}
+.cart-nav-badge:hover {
+  border-color: var(--purple); background: var(--card3);
+  box-shadow: 0 0 16px rgba(139,92,246,.25); transform: translateY(-1px);
+}
+.cart-count-pill {
+  background: linear-gradient(135deg, var(--purple), var(--orange));
+  color: #fff; font-size: .72rem; font-weight: 800;
+  padding: 2px 7px; border-radius: 10px; min-width: 20px; text-align: center;
+  box-shadow: 0 2px 8px rgba(139,92,246,.4);
+  transition: transform .3s cubic-bezier(.175,.885,.32,1.275);
+}
+.cart-count-pill.bump {
+  animation: cartBump .4s cubic-bezier(.175,.885,.32,1.275);
+}
+
+/* Button Success State Animation */
+.btn-added {
+  background: linear-gradient(135deg, #16a34a, #15803d) !important;
+  color: #fff !important; box-shadow: 0 4px 16px rgba(22,163,74,.4) !important;
+  animation: popSuccess .35s ease !important;
+}
+
+/* Flying +1 Particle Animation */
+.cart-fly-particle {
+  position: fixed; pointer-events: none; z-index: 99999;
+  font-weight: 900; font-size: 1.1rem; color: #4ade80;
+  text-shadow: 0 0 10px rgba(74,222,128,.6);
+  animation: flyToCart .75s cubic-bezier(.1,.8,.3,1) forwards;
+}
+
+@keyframes cartBump {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.45) rotate(-6deg); }
+  100% { transform: scale(1); }
+}
+@keyframes popSuccess {
+  0%   { transform: scale(0.92); }
+  50%  { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+@keyframes flyToCart {
+  0% {
+    opacity: 1; transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0; transform: translate(var(--fly-x, 0), var(--fly-y, -100px)) scale(0.4);
+  }
 }
