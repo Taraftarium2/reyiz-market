@@ -6,13 +6,6 @@
     <h2>Ödeme Bekleniyor</h2>
     <p class="pending-sub">Aşağıdaki banka hesabına havale / EFT yap. Ödeme onaylandıktan sonra oyunlar kütüphanene eklenir.</p>
 
-    <% if (typeof hata !== 'undefined' && hata) { %>
-      <div class="alert" style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.35);color:#f87171;border-radius:var(--radius);padding:14px 18px;margin-bottom:18px;text-align:left">
-        <strong>❌ Onay başarısız oldu, sipariş kütüphaneye eklenmedi.</strong>
-        <div style="font-size:.82rem;margin-top:6px;opacity:.9"><%= hata %></div>
-      </div>
-    <% } %>
-
     <!-- Sipariş Kodu -->
     <div class="ref-box">
       <div class="ref-label">📋 Açıklama / Sipariş Kodu — Havaleye mutlaka yaz!</div>
