@@ -1,0 +1,84 @@
+<%- include('partials/header') %>
+<section class="section narrow">
+  <div class="pending-box">
+    <div class="pending-icon">⏳</div>
+    <h2>Ödemen Bekleniyor</h2>
+    <p class="muted">Aşağıdaki banka hesabına havale / EFT yaparak siparişini tamamla. Ödeme onaylandıktan sonra oyunlar kütüphanene eklenecek.</p>
+
+    <div class="order-ref-box">
+      <span class="ref-label">Açıklama / Sipariş Kodu</span>
+      <div class="ref-value" id="refCode"><%= order.payment_ref %></div>
+      <button class="btn-copy" onclick="copyRef()" id="copyBtn" title="Kopyala">📋 Kopyala</button>
+    </div>
+
+    <% if (iban) { %>
+    <div class="iban-box">
+      <div class="iban-row">
+        <span class="iban-label">Banka</span>
+        <span class="iban-val"><%= bankName %></span>
+      </div>
+      <div class="iban-row">
+        <span class="iban-label">Hesap Sahibi</span>
+        <span class="iban-val"><%= bankOwner %></span>
+      </div>
+      <div class="iban-row">
+        <span class="iban-label">IBAN</span>
+        <span class="iban-val iban-num" id="ibanNum"><%= iban %></span>
+        <button class="btn-copy-sm" onclick="copyIban()" title="IBAN kopyala">📋</button>
+      </div>
+      <div class="iban-row">
+        <span class="iban-label">Tutar</span>
+        <span class="iban-val price">₺<%= Number(order.total_amount).toFixed(2) %></span>
+      </div>
+    </div>
+    <% } else { %>
+    <div class="alert" style="margin:18px 0">Banka bilgileri henüz ayarlanmamış. Lütfen admin ile iletişime geç.</div>
+    <% } %>
+
+    <div class="order-items-list">
+      <h4>Sipariş İçeriği</h4>
+      <% items.forEach(function(item) { %>
+      <div class="order-item-row">
+        <span><%= item.title %></span>
+        <span class="price-sm">₺<%= Number(item.price_at_purchase).toFixed(2) %></span>
+      </div>
+      <% }) %>
+      <div class="order-item-row total-row">
+        <span><strong>Toplam</strong></span>
+        <span class="price"><strong>₺<%= Number(order.total_amount).toFixed(2) %></strong></span>
+      </div>
+    </div>
+
+    <div class="pending-steps">
+      <div class="pstep done">✓ Sipariş oluşturuldu</div>
+      <div class="pstep active">⏳ Havale bekleniyor</div>
+      <div class="pstep">📦 Kütüphaneye ekleme</div>
+    </div>
+
+    <div class="pending-actions">
+      <a class="btn ghost" href="/siparislerim">Tüm Siparişlerim</a>
+      <a class="btn" href="/profil/kutuphanem">Kütüphanem</a>
+    </div>
+
+    <p class="note" style="margin-top:20px">⚠️ Havale açıklamasına mutlaka sipariş kodunu (<strong><%= order.payment_ref %></strong>) yaz. Aksi hâlde ödemen eşleştirilemez.</p>
+  </div>
+</section>
+
+<script>
+function copyRef() {
+  const code = document.getElementById('refCode').textContent.trim();
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = '✅ Kopyalandı';
+    setTimeout(() => btn.textContent = '📋 Kopyala', 2000);
+  });
+}
+function copyIban() {
+  const iban = document.getElementById('ibanNum').textContent.trim();
+  navigator.clipboard.writeText(iban).then(() => {
+    const btns = document.querySelectorAll('.btn-copy-sm');
+    btns.forEach(b => { b.textContent = '✅'; setTimeout(() => b.textContent = '📋', 2000); });
+  });
+}
+</script>
+<%- include('partials/footer') %>
