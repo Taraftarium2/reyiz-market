@@ -1,18 +1,25 @@
-<article class="card">
-  <div class="cover" style="background:<%= game.cover_image_url || 'linear-gradient(135deg,#8b5cf6,#f97316)' %>">
-    <% if (game.cover_image_url) { %><img src="<%= game.cover_image_url %>" alt=""><% } %>
-    <span class="tag"><%= game.tag %></span>
-    <% if (game.featured) { %><span class="badge hot">🔥 Popüler</span><% } %>
+<article class="card" data-title="<%= game.title.toLowerCase() %>" data-tag="<%= game.tag || '' %>">
+  <div class="cover">
+    <% if (game.cover_image_url) { %>
+      <img src="<%= game.cover_image_url %>" alt="<%= game.title %>">
+    <% } else { %>
+      <div class="cover-placeholder">🎮</div>
+    <% } %>
+    <span class="tag-chip"><%= game.tag || 'Oyun' %></span>
+    <% if (game.featured) { %><span class="featured-chip">⭐ Öne Çıkan</span><% } %>
   </div>
   <div class="card-body">
-    <h3><a href="/oyunlar/<%= game.slug %>"><%= game.title %></a></h3>
-    <p><%= (game.description || '').slice(0, 90) %></p>
-    <div class="row">
+    <h3><%= game.title %></h3>
+    <p><%= (game.description || '').slice(0, 85) %><% if ((game.description||'').length > 85) { %>…<% } %></p>
+    <div class="card-foot">
       <span class="price">₺<%= Number(game.price).toFixed(0) %></span>
-      <form method="post" action="/sepet/ekle">
-        <input type="hidden" name="game_id" value="<%= game.id %>">
-        <button class="btn sm">Sepete Ekle</button>
-      </form>
+      <div style="display:flex;gap:8px;align-items:center">
+        <a class="btn ghost sm" href="/oyunlar/<%= game.slug %>">İncele</a>
+        <form method="post" action="/sepet/ekle" style="margin:0">
+          <input type="hidden" name="game_id" value="<%= game.id %>">
+          <button class="btn sm">+ Sepet</button>
+        </form>
+      </div>
     </div>
   </div>
 </article>

@@ -3,16 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Reyiz Market — TikTok LIVE için Node.js tabanlı interaktif oyunların dijital mağazası.">
   <title><%= title %> · Reyiz Market</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
 <header class="nav">
-  <a class="logo" href="/">⚡ Reyiz<span>Market</span></a>
-  <button class="burger" onclick="document.body.classList.toggle('menu-open')">☰</button>
-  <nav class="links">
+  <a class="logo" href="/">
+    <span class="logo-icon">⚡</span>
+    Reyiz<span>Market</span>
+  </a>
+  <button class="burger" id="burgerBtn" aria-label="Menü">☰</button>
+  <nav class="links" id="navLinks">
     <a href="/oyunlar">Oyunlar</a>
-    <a href="/sepet">Sepet (<%= cartCount %>)</a>
+    <a href="/sepet">🛒 (<%= cartCount %>)</a>
     <% if (user) { %>
       <a href="/siparislerim">Siparişlerim</a>
       <a href="/profil/kutuphanem">Kütüphanem</a>
@@ -20,9 +26,14 @@
       <% if (user.role === 'admin') { %><a href="/admin" class="btn sm">⚙ Admin</a><% } %>
       <a href="/cikis">Çıkış</a>
     <% } else { %>
-      <a href="/giris">Giriş</a>
+      <a href="/giris">Giriş Yap</a>
       <a class="btn" href="/kayit">Üye Ol</a>
     <% } %>
   </nav>
 </header>
 <main>
+<script>
+  document.getElementById('burgerBtn').addEventListener('click', function() {
+    document.body.classList.toggle('menu-open');
+  });
+</script>
