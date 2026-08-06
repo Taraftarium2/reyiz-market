@@ -48,7 +48,7 @@ router.post('/odeme', requireAuth, async (req, res) => {
   if (!ids.length) return res.redirect('/sepet');
   const games = (await db.query('SELECT * FROM games WHERE id = ANY($1)', [ids])).rows;
   const total = games.reduce((s, g) => s + Number(g.price), 0);
-  const mode = process.env.PAYMENT_MODE || 'mock';
+  const mode = process.env.PAYMENT_MODE || 'manual';
 
   if (mode === 'iyzico') {
     const pay = await initIyzico(games, total, req.body, req);
@@ -56,10 +56,43 @@ router.post('/odeme', requireAuth, async (req, res) => {
     return res.redirect(pay.url);
   }
 
-  // mock modu — anında başarılı (test / ilk deploy için)
-  await finalizeOrder(req.user.id, games, total, 'mock', 'mock_' + Date.now());
+  if (mode === 'mock') {
+    // mock modu — anında başarılı (sadece test için)
+    await finalizeOrder(req.user.id, games, total, 'mock', 'mock_' + Date.now());
+    writeCart(res, []);
+    return res.redirect('/odeme/basarili');
+  }
+
+  // manual modu (varsayılan) — sipariş pending olarak oluşturulur
+  // Admin onaylayınca user_library'e eklenir
+  const ref = 'RM-' + Date.now().toString(36).toUpperCase();
+  const orderId = await createPendingOrder(req.user.id, games, total, 'manual', ref);
   writeCart(res, []);
-  res.redirect('/odeme/basarili');
+  res.redirect('/odeme/beklemede/' + orderId);
+});
+
+// Ödeme bekleme / IBAN bilgisi sayfası
+router.get('/odeme/beklemede/:id', requireAuth, async (req, res) => {
+  res.locals.title = 'Ödeme Bekleniyor';
+  const orderId = Number(req.params.id);
+  const o = (await db.query(
+    `SELECT o.*, u.email FROM orders o JOIN users u ON u.id = o.user_id WHERE o.id = $1 AND o.user_id = $2`,
+    [orderId, req.user.id]
+  )).rows[0];
+  if (!o) return res.redirect('/siparislerim');
+
+  const items = (await db.query(
+    `SELECT g.title, oi.price_at_purchase FROM order_items oi JOIN games g ON g.id = oi.game_id WHERE oi.order_id = $1`,
+    [orderId]
+  )).rows;
+
+  res.render('pending', {
+    order: o,
+    items,
+    iban: process.env.BANK_IBAN || '',
+    bankName: process.env.BANK_NAME || '',
+    bankOwner: process.env.BANK_OWNER || '',
+  });
 });
 
 router.get('/odeme/basarili', requireAuth, (req, res) => { res.locals.title = 'Sipariş Onayı'; res.render('success'); });
@@ -81,6 +114,30 @@ router.get('/odeme/sonuc', requireAuth, async (req, res) => {
   res.render('error', { message: 'Ödeme tamamlanamadı.', status: 400 });
 });
 
+// Pending sipariş oluştur — user_library'e EKLEME YAPMA
+async function createPendingOrder(userId, games, total, provider, ref) {
+  const cli = await db.connect();
+  try {
+    await cli.query('BEGIN');
+    const o = await cli.query(
+      'INSERT INTO orders (user_id, total_amount, status, payment_provider, payment_ref) VALUES ($1,$2,$3,$4,$5) RETURNING id',
+      [userId, total, 'pending', provider, ref]
+    );
+    const orderId = o.rows[0].id;
+    for (const g of games) {
+      await cli.query('INSERT INTO order_items (order_id, game_id, price_at_purchase) VALUES ($1,$2,$3)', [orderId, g.id, g.price]);
+    }
+    await cli.query('COMMIT');
+    return orderId;
+  } catch (e) {
+    await cli.query('ROLLBACK');
+    throw e;
+  } finally {
+    cli.release();
+  }
+}
+
+// Paid sipariş — user_library'e EKLE (admin onayı veya iyzico başarısı için)
 async function finalizeOrder(userId, games, total, provider, ref) {
   const cli = await db.connect();
   try {
