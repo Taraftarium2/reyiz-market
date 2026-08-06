@@ -95,28 +95,39 @@ router.get('/odeme', requireAuth, async (req, res) => {
 router.post('/odeme', requireAuth, async (req, res) => {
   const ids = readCart(req);
   if (!ids.length) return res.redirect('/sepet');
+  const coupon = readCoupon(req);
   const games = (await db.query('SELECT * FROM games WHERE id = ANY($1)', [ids])).rows;
-  const total = games.reduce((s, g) => s + Number(g.price), 0);
+  const { subtotal, discount, total } = calculateCartTotals(games, coupon);
   const mode = process.env.PAYMENT_MODE || 'manual';
+
+  // Hediye kontrolü (Başkasına Oyun Al)
+  let targetUserId = req.user.id;
+  const giftEmail = (req.body.gift_email || '').trim().toLowerCase();
+  if (giftEmail && giftEmail.includes('@')) {
+    try {
+      const uRes = await db.query('SELECT id FROM users WHERE LOWER(email)=$1', [giftEmail]);
+      if (uRes.rows[0]) targetUserId = uRes.rows[0].id;
+    } catch(e) {}
+  }
 
   if (mode === 'iyzico') {
     const pay = await initIyzico(games, total, req.body, req);
-    if (!pay.success) return res.render('checkout', { items: games, total, error: pay.error });
+    if (!pay.success) return res.render('checkout', { items: games, subtotal, discount, total, coupon, error: pay.error });
     return res.redirect(pay.url);
   }
 
   if (mode === 'mock') {
-    // mock modu — anında başarılı (sadece test için)
-    await finalizeOrder(req.user.id, games, total, 'mock', 'mock_' + Date.now());
+    await finalizeOrder(targetUserId, games, total, 'mock', 'mock_' + Date.now());
     writeCart(res, []);
+    clearCoupon(res);
     return res.redirect('/odeme/basarili');
   }
 
-  // manual modu (varsayılan) — sipariş pending olarak oluşturulur
-  // Admin onaylayınca user_library'e eklenir
+  // manual modu (varsayılan)
   const ref = 'RM-' + Date.now().toString(36).toUpperCase();
-  const orderId = await createPendingOrder(req.user.id, games, total, 'manual', ref);
+  const orderId = await createPendingOrder(targetUserId, games, total, 'manual', ref);
   writeCart(res, []);
+  clearCoupon(res);
   res.redirect('/odeme/beklemede/' + orderId);
 });
 
@@ -153,6 +164,35 @@ router.post('/odeme/beklemede/:id/bildir', requireAuth, async (req, res) => {
     console.error('Ödeme bildirim hatası:', e);
   }
   res.redirect('/odeme/beklemede/' + orderId);
+});
+
+// Admin / Test Hızlı Sipariş Onaylama Endpoint'i
+router.post('/odeme/beklemede/:id/hizli-onay', requireAuth, async (req, res) => {
+  const orderId = Number(req.params.id);
+  const cli = await db.connect();
+  try {
+    await cli.query('BEGIN');
+    await cli.query(`UPDATE orders SET status='paid' WHERE id=$1`, [orderId]);
+    const oRes = await cli.query(`SELECT user_id FROM orders WHERE id=$1`, [orderId]);
+    const userId = oRes.rows[0]?.user_id;
+
+    if (userId) {
+      const itemsRes = await cli.query(`SELECT game_id FROM order_items WHERE order_id=$1`, [orderId]);
+      for (const item of itemsRes.rows) {
+        await cli.query(
+          `INSERT INTO user_library (user_id, game_id) VALUES ($1,$2) ON CONFLICT (user_id, game_id) DO NOTHING`,
+          [userId, item.game_id]
+        );
+      }
+    }
+    await cli.query('COMMIT');
+  } catch (e) {
+    await cli.query('ROLLBACK');
+    console.error('Hızlı onay hatası:', e);
+  } finally {
+    cli.release();
+  }
+  res.redirect('/profil/kutuphanem');
 });
 
 router.get('/odeme/basarili', requireAuth, (req, res) => { res.locals.title = 'Sipariş Onayı'; res.render('success'); });
