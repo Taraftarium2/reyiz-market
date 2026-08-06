@@ -16,9 +16,10 @@ const upload = multer({
   })
 });
 
+// ── Admin Ana Sayfa & Dashboard ──────────────────────────────────────
 router.get('/', requireAdmin, async (req, res) => {
   res.locals.title = 'Admin Panel';
-  let games = [], orders = [];
+  let games = [], orders = [], users = [];
   let stats = { totalRevenue: 0, pendingCount: 0, totalUsers: 0, totalOrders: 0 };
 
   try {
@@ -35,6 +36,8 @@ router.get('/', requireAdmin, async (req, res) => {
       LIMIT 100
     `)).rows;
 
+    users = (await db.query('SELECT id, email, name, role, created_at FROM users ORDER BY created_at DESC LIMIT 50')).rows;
+
     const rRev = await db.query(`SELECT COALESCE(SUM(total_amount),0) AS v FROM orders WHERE status='paid'`);
     stats.totalRevenue = rRev.rows[0]?.v || 0;
     const rPend = await db.query(`SELECT COUNT(*) AS v FROM orders WHERE status='pending'`);
@@ -47,70 +50,94 @@ router.get('/', requireAdmin, async (req, res) => {
     console.error('⚠️ Admin paneli sorgu uyarısı:', err.message);
   }
 
-  res.render('admin', { games, orders, stats });
+  res.render('admin', { games, orders, users, stats });
 });
 
 // ── Oyun Ekle ──────────────────────────────────────────────────────
 router.post('/oyun', requireAdmin, upload.single('file'), async (req, res) => {
-  const { title, slug, description, price, cover_image_url, node_version, tag, featured } = req.body;
-  const file_key = req.file ? req.file.filename : (req.body.file_key || 'placeholder.txt');
-  await db.query(
-    `INSERT INTO games (title,slug,description,price,cover_image_url,file_key,node_version,tag,featured)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-    [title, slug || title.toLowerCase().replace(/\s+/g, '-'), description, price, cover_image_url || '', file_key, node_version || '18', tag || 'Mini Oyun', featured ? true : false]
-  );
+  try {
+    const { title, slug, description, price, cover_image_url, node_version, tag, featured } = req.body;
+    const file_key = req.file ? req.file.filename : (req.body.file_key || 'placeholder.txt');
+    const autoSlug = (slug && slug.trim()) ? slug.trim().toLowerCase() : title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    
+    await db.query(
+      `INSERT INTO games (title,slug,description,price,cover_image_url,file_key,node_version,tag,featured)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+      [title, autoSlug, description || '', price || 0, cover_image_url || '', file_key, node_version || '18', tag || 'Mini Oyun', featured ? true : false]
+    );
+  } catch (e) {
+    console.error('Oyun ekleme hatası:', e);
+  }
   res.redirect('/admin');
 });
 
-// ── Oyun Güncelle ──────────────────────────────────────────────────
-router.post('/oyun/:id', requireAdmin, upload.single('file'), async (req, res) => {
+// ── Oyun Düzenle (POST /admin/oyun/:id/duzenle) ────────────────────
+router.post('/oyun/:id/duzenle', requireAdmin, upload.single('file'), async (req, res) => {
   const id = Number(req.params.id);
   const { title, slug, description, price, cover_image_url, node_version, tag, featured } = req.body;
   const file_key = req.file ? req.file.filename : undefined;
-  let sql = 'UPDATE games SET title=$1,slug=$2,description=$3,price=$4,cover_image_url=$5,node_version=$6,tag=$7,featured=$8';
-  const params = [title, slug, description, price, cover_image_url, node_version, tag, featured ? true : false];
-  if (file_key) { sql += ',file_key=$' + (params.length + 1); params.push(file_key); }
-  sql += ' WHERE id=$' + (params.length + 1);
-  params.push(id);
-  await db.query(sql, params);
+
+  try {
+    let sql = 'UPDATE games SET title=$1, slug=$2, description=$3, price=$4, cover_image_url=$5, node_version=$6, tag=$7, featured=$8';
+    const params = [title, slug, description, price, cover_image_url, node_version || '18', tag || 'Mini Oyun', featured ? true : false];
+    
+    if (file_key) {
+      sql += ', file_key=$' + (params.length + 1);
+      params.push(file_key);
+    }
+    
+    sql += ' WHERE id=$' + (params.length + 1);
+    params.push(id);
+    await db.query(sql, params);
+  } catch (e) {
+    console.error('Oyun güncelleme hatası:', e);
+  }
   res.redirect('/admin');
 });
 
-// ── Oyun Sil ───────────────────────────────────────────────────────
+// ── Oyun Sil (Güvenli CASCADE silme) ────────────────────────────────
 router.post('/oyun/:id/sil', requireAdmin, async (req, res) => {
-  await db.query('DELETE FROM games WHERE id=$1', [Number(req.params.id)]);
+  const gameId = Number(req.params.id);
+  const cli = await db.connect();
+  try {
+    await cli.query('BEGIN');
+    // İlişkili tabloları temizle (Foreign key hatası almamak için)
+    await cli.query('DELETE FROM user_library WHERE game_id=$1', [gameId]);
+    await cli.query('DELETE FROM order_items WHERE game_id=$1', [gameId]);
+    await cli.query('DELETE FROM games WHERE id=$1', [gameId]);
+    await cli.query('COMMIT');
+  } catch (e) {
+    await cli.query('ROLLBACK');
+    console.error('Oyun silme hatası:', e);
+  } finally {
+    cli.release();
+  }
   res.redirect('/admin');
 });
 
 // ── Sipariş Onayla ─────────────────────────────────────────────────
-// Siparişi paid yapar ve tüm ürünleri user_library'e ekler (transaction)
 router.post('/siparis/:id/onayla', requireAdmin, async (req, res) => {
   const orderId = Number(req.params.id);
   const cli = await db.connect();
   try {
     await cli.query('BEGIN');
-
-    // Siparişi paid yap
     await cli.query(`UPDATE orders SET status='paid' WHERE id=$1 AND status='pending'`, [orderId]);
-
-    // Siparişe ait ürünleri bul
+    
     const items = (await cli.query(
       `SELECT oi.game_id, o.user_id FROM order_items oi JOIN orders o ON o.id = oi.order_id WHERE oi.order_id = $1`,
       [orderId]
     )).rows;
 
-    // user_library'e ekle
     for (const item of items) {
       await cli.query(
         `INSERT INTO user_library (user_id, game_id) VALUES ($1,$2) ON CONFLICT DO NOTHING`,
         [item.user_id, item.game_id]
       );
     }
-
     await cli.query('COMMIT');
   } catch (e) {
     await cli.query('ROLLBACK');
-    throw e;
+    console.error('Sipariş onay hatası:', e);
   } finally {
     cli.release();
   }
@@ -119,7 +146,42 @@ router.post('/siparis/:id/onayla', requireAdmin, async (req, res) => {
 
 // ── Sipariş İptal Et ───────────────────────────────────────────────
 router.post('/siparis/:id/iptal', requireAdmin, async (req, res) => {
-  await db.query(`UPDATE orders SET status='cancelled' WHERE id=$1`, [Number(req.params.id)]);
+  try {
+    await db.query(`UPDATE orders SET status='cancelled' WHERE id=$1`, [Number(req.params.id)]);
+  } catch (e) {
+    console.error('Sipariş iptal hatası:', e);
+  }
+  res.redirect('/admin');
+});
+
+// ── Sipariş Sil ───────────────────────────────────────────────────
+router.post('/siparis/:id/sil', requireAdmin, async (req, res) => {
+  const orderId = Number(req.params.id);
+  const cli = await db.connect();
+  try {
+    await cli.query('BEGIN');
+    await cli.query('DELETE FROM order_items WHERE order_id=$1', [orderId]);
+    await cli.query('DELETE FROM orders WHERE id=$1', [orderId]);
+    await cli.query('COMMIT');
+  } catch (e) {
+    await cli.query('ROLLBACK');
+    console.error('Sipariş silme hatası:', e);
+  } finally {
+    cli.release();
+  }
+  res.redirect('/admin');
+});
+
+// ── Kullanıcı Rol Değiştir (Admin Yetkisi Ver / Al) ─────────────────
+router.post('/kullanici/:id/rol', requireAdmin, async (req, res) => {
+  const userId = Number(req.params.id);
+  const { role } = req.body;
+  try {
+    const newRole = role === 'admin' ? 'admin' : 'user';
+    await db.query('UPDATE users SET role=$1 WHERE id=$2', [newRole, userId]);
+  } catch (e) {
+    console.error('Kullanıcı rol güncelleme hatası:', e);
+  }
   res.redirect('/admin');
 });
 
