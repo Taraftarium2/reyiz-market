@@ -18,11 +18,35 @@ router.get('/profil/kutuphanem', requireAuth, async (req, res) => {
       ...g,
       downloadUrl: storage.downloadUrl(g, req.protocol + '://' + req.get('host'))
     }));
-    res.render('library', { games });
+
+    // Bekleyen sipariş sayısı kontrolü
+    const pendingOrders = (await db.query(
+      `SELECT COUNT(*) AS v FROM orders WHERE user_id=$1 AND status='pending'`,
+      [req.user.id]
+    )).rows[0]?.v || 0;
+
+    res.render('library', { games, pendingOrders: Number(pendingOrders) });
   } catch (e) {
     console.error('Kütüphane sorgu hatası:', e);
-    res.render('library', { games: [] });
+    res.render('library', { games: [], pendingOrders: 0 });
   }
+});
+
+// Admin Testi: Tüm Oyunları Kütüphaneye Ekle
+router.post('/admin/kutuphaneme-ekle', requireAuth, async (req, res) => {
+  if (req.user.role !== 'admin') return res.redirect('/profil/kutuphanem');
+  try {
+    const allGames = (await db.query('SELECT id FROM games')).rows;
+    for (const g of allGames) {
+      await db.query(
+        'INSERT INTO user_library (user_id, game_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+        [req.user.id, g.id]
+      );
+    }
+  } catch (e) {
+    console.error('Admin kütüphane ekleme hatası:', e);
+  }
+  res.redirect('/profil/kutuphanem');
 });
 
 // Güvenli Oyun .ZIP İndirme Endpoint'i
@@ -33,14 +57,16 @@ router.get('/indir/:id', requireAuth, async (req, res) => {
   }
   
   const owned = await db.query('SELECT * FROM user_library WHERE user_id=$1 AND game_id=$2', [req.user.id, Number(req.params.id)]);
-  if (!owned.rows.length) {
+  if (!owned.rows.length && req.user.role !== 'admin') {
     return res.status(403).render('error', { message: 'Bu oyunu henüz satın almadınız.', status: 403 });
   }
 
   const g = (await db.query('SELECT * FROM games WHERE id=$1', [Number(req.params.id)])).rows[0];
   if (!g) return res.status(404).render('error', { message: 'Oyun bulunamadı.', status: 404 });
 
-  await db.query('UPDATE user_library SET download_count = download_count + 1 WHERE user_id=$1 AND game_id=$2', [req.user.id, g.id]);
+  try {
+    await db.query('UPDATE user_library SET download_count = download_count + 1 WHERE user_id=$1 AND game_id=$2', [req.user.id, g.id]);
+  } catch(e) {}
 
   // R2 modu: S3 presigned URL bağlantısına yönlendir
   if (storage.s3) {
