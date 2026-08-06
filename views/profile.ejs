@@ -1,10 +1,10 @@
 <%- include('partials/header') %>
 <section class="section narrow">
   <h2>Profil</h2>
-  <div class="card plain">
+  <div class="panel">
     <p><b>Ad:</b> <%= info.name %></p>
     <p><b>E-posta:</b> <%= info.email %></p>
-    <p><b>Üyelik:</b> <%= new Date(info.created_at).toLocaleDateString('tr-TR') %></p>
+    <p><b>Üyelik:</b> <%- new Date(info.created_at).toLocaleDateString('tr-TR') %></p>
     <a class="btn" href="/profil/kutuphanem">Kütüphanem</a>
   </div>
 </section>
