@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const db = require('./db');
 
 const SECRET = process.env.JWT_SECRET || 'degistir-bu-anahtari';
 
@@ -7,7 +8,7 @@ function signToken(user) {
 }
 
 function getUser(req) {
-  const t = req.cookies.token;
+  const t = req && req.cookies ? req.cookies.token : null;
   if (!t) return null;
   try { return jwt.verify(t, SECRET); } catch (e) { return null; }
 }
@@ -19,12 +20,22 @@ function requireAuth(req, res, next) {
   next();
 }
 
-function requireAdmin(req, res, next) {
+async function requireAdmin(req, res, next) {
   const u = getUser(req);
   if (!u) return res.redirect('/giris');
-  if (u.role !== 'admin') return res.status(403).render('error', { message: 'Yetkisiz erişim.', status: 403 });
-  req.user = u;
-  next();
+  try {
+    const dbUser = (await db.query('SELECT id, email, role FROM users WHERE id=$1', [u.id])).rows[0];
+    if (dbUser && dbUser.role === 'admin') {
+      req.user = dbUser;
+      return next();
+    }
+  } catch (e) {
+    if (u.role === 'admin') {
+      req.user = u;
+      return next();
+    }
+  }
+  return res.status(403).render('error', { message: 'Yetkisiz erişim. Admin yetkiniz bulunmuyor.', status: 403 });
 }
 
 module.exports = { signToken, getUser, requireAuth, requireAdmin };
