@@ -49,6 +49,19 @@
       </div>
 
       <form method="post" action="/odeme" class="form">
+        <!-- Hediye Kutusu -->
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px 20px;margin-bottom:20px">
+          <label style="cursor:pointer;display:flex;align-items:center;gap:10px;font-weight:700">
+            <input type="checkbox" id="giftToggle" onchange="document.getElementById('giftInputWrap').style.display = this.checked ? 'block' : 'none'">
+            🎁 Bu siparişi arkadaşıma / başka bir yayıncıya hediye et
+          </label>
+          <div id="giftInputWrap" style="display:none;margin-top:12px">
+            <label style="font-size:.85rem;color:var(--muted)">Alıcının Reyiz Market E-posta Adresi:</label>
+            <input name="gift_email" placeholder="yayin_arkadasi@gmail.com" style="margin-top:4px">
+            <div style="font-size:.78rem;color:var(--muted);margin-top:4px">Ödeme onaylandığında oyun doğrudan alıcının kütüphanesine eklenecektir.</div>
+          </div>
+        </div>
+
         <button class="btn big" type="submit" style="width:100%;padding:16px;font-size:1.05rem">Siparişi Tamamla & IBAN Göster →</button>
       </form>
       <p class="note" style="margin-top:14px;text-align:center">🔒 %100 Güvenli Dijital Sipariş Altyapısı</p>

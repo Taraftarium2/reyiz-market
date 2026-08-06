@@ -63,8 +63,15 @@
         ⚡ Havale yaptığınız bildirildi. Admin kontrol edip kısa sürede onaylayacaktır.
       </div>
     <% } else { %>
-      <form method="post" action="/odeme/beklemede/<%= order.id %>/bildir" style="margin-bottom:18px;text-align:center">
+      <form method="post" action="/odeme/beklemede/<%= order.id %>/bildir" style="margin-bottom:12px;text-align:center">
         <button class="btn big success-btn" type="submit" style="width:100%;padding:14px">⚡ Havaleyi Yaptım (Admine Bildir)</button>
+      </form>
+    <% } %>
+
+    <!-- ADMIN HIZLI ONAY BUTONU (TEST İÇİN) -->
+    <% if (user && user.role === 'admin') { %>
+      <form method="post" action="/odeme/beklemede/<%= order.id %>/hizli-onay" style="margin-bottom:18px">
+        <button class="btn big" type="submit" style="width:100%;padding:14px;background:linear-gradient(135deg,#8b5cf6,#ec4899);color:#fff">⚡ Admin Hızlı Onayla & Kütüphaneme Git ➔</button>
       </form>
     <% } %>
 

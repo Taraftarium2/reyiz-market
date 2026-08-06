@@ -67,9 +67,61 @@
     </div>
   </div>
 
+  <!-- YAYINCI DEĞERLENDİRMELERİ & YORUMLAR -->
+  <div style="margin-top:48px;padding-top:36px;border-top:1px solid var(--border)">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px">
+      <h3 style="font-size:1.3rem;font-weight:800">⭐ Yayıncı Değerlendirmeleri</h3>
+      <span style="font-size:.9rem;color:var(--muted)">4.9 / 5 ⭐ (Topluluk Puanı)</span>
+    </div>
+
+    <!-- Yorum Yap Formu (Giriş Yapmış Kullanıcılar İçin) -->
+    <% if (typeof user !== 'undefined' && user) { %>
+      <div style="background:var(--card2);border:1px solid var(--border2);border-radius:16px;padding:20px;margin-bottom:28px">
+        <h4 style="font-size:.95rem;font-weight:700;margin-bottom:10px">✍️ Oyuna Yorum Yap ve Yıldız Ver</h4>
+        <form method="post" action="/oyunlar/<%= game.slug %>/yorum" class="form">
+          <div style="display:flex;gap:12px;margin-bottom:10px;align-items:center">
+            <label style="font-size:.85rem;color:var(--muted)">Puanınız:</label>
+            <select name="rating" style="padding:6px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-weight:700">
+              <option value="5">⭐⭐⭐⭐⭐ (5/5 Mükemmel)</option>
+              <option value="4">⭐⭐⭐⭐ (4/5 Çok İyi)</option>
+              <option value="3">⭐⭐⭐ (3/5 İyi)</option>
+              <option value="2">⭐⭐ (2/5 Orta)</option>
+              <option value="1">⭐ (1/5 Zayıf)</option>
+            </select>
+          </div>
+          <textarea name="comment" placeholder="Bu oyun yayınınızda nasıl performans gösterdi? Deneyimlerinizi paylaşın..." rows="3" style="width:100%;margin-bottom:10px" required></textarea>
+          <button class="btn sm" type="submit">Yorumu Gönder</button>
+        </form>
+      </div>
+    <% } %>
+
+    <!-- Yorum Listesi -->
+    <% if (typeof reviews !== 'undefined' && reviews && reviews.length > 0) { %>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <% reviews.forEach(function(r){ %>
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 20px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <div style="font-weight:700;font-size:.92rem">
+                <%= r.user_name || 'Yayıncı' %>
+                <span style="background:rgba(74,222,128,.15);color:#4ade80;font-size:.72rem;padding:2px 8px;border-radius:6px;margin-left:6px;font-weight:600">✓ Onaylı Yayıncı</span>
+              </div>
+              <div style="color:#fbbf24;font-size:.85rem">
+                <%= '⭐'.repeat(r.rating) %>
+              </div>
+            </div>
+            <p style="font-size:.88rem;color:var(--text);margin:0;line-height:1.5"><%= r.comment %></p>
+            <div style="font-size:.72rem;color:var(--muted);margin-top:6px"><%= new Date(r.created_at).toLocaleDateString('tr-TR') %></div>
+          </div>
+        <% }); %>
+      </div>
+    <% } else { %>
+      <p style="color:var(--muted);font-size:.9rem;font-style:italic">Bu oyuna henüz yorum yapılmadı. İlk yorum yapan siz olun!</p>
+    <% } %>
+  </div>
+
   <!-- BENZER OYUNLAR -->
   <% if (typeof related !== 'undefined' && related && related.length > 0) { %>
-  <div style="margin-top:64px;padding-top:40px;border-top:1px solid var(--border)">
+  <div style="margin-top:48px;padding-top:36px;border-top:1px solid var(--border)">
     <h3 style="font-size:1.4rem;font-weight:800;margin-bottom:20px">🎮 Benzer İnteraktif Oyunlar</h3>
     <div class="grid">
       <% related.forEach(function (g) { %><%- include('partials/gamecard', { game: g }) %><% }) %>

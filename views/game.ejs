@@ -1,9 +1,22 @@
 <%- include('partials/header') %>
 
 <section class="section">
-  <div class="filters-bar">
-    <input class="search-input" id="searchInput" type="text" placeholder="🔍  Oyun ara...">
-    <div class="tags" id="tagFilters">
+  <div class="section-title" style="text-align:left;margin-bottom:24px">
+    <h2>🎮 TikTok LIVE Oyun Kataloğu</h2>
+    <p>Canlı yayınlarınızda etkileşimi katlayacak tüm interaktif oyunlar</p>
+  </div>
+
+  <div class="filters-bar" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:24px">
+    <input class="search-input" id="searchInput" type="text" placeholder="🔍 Oyun adı veya özelliği ara..." style="flex:1;min-width:220px">
+    
+    <select id="sortSelect" onchange="location.href='/oyunlar?sort=' + this.value + (document.getElementById('searchInput').value ? '&q=' + encodeURIComponent(document.getElementById('searchInput').value) : '')" style="padding:12px 16px;background:var(--card);border:1px solid var(--border);border-radius:12px;color:var(--text);font-weight:700;cursor:pointer">
+      <option value="newest" <%= (typeof sort === 'undefined' || sort === 'newest') ? 'selected' : '' %>>✨ En Yeniler</option>
+      <option value="popular" <%= (typeof sort !== 'undefined' && sort === 'popular') ? 'selected' : '' %>>🔥 En Popüler</option>
+      <option value="price_asc" <%= (typeof sort !== 'undefined' && sort === 'price_asc') ? 'selected' : '' %>>💲 Fiyat (Önce En Düşük)</option>
+      <option value="price_desc" <%= (typeof sort !== 'undefined' && sort === 'price_desc') ? 'selected' : '' %>>💎 Fiyat (Önce En Yüksek)</option>
+    </select>
+
+    <div class="tags" id="tagFilters" style="width:100%;margin-top:8px">
       <button class="chip active" data-tag="">Tümü</button>
       <% const tags = [...new Set(games.map(function(g){return g.tag;}).filter(Boolean))];
          tags.forEach(function(t) { %>
@@ -15,7 +28,7 @@
   <div class="grid" id="gamesGrid">
     <% games.forEach(function (g) { %><%- include('partials/gamecard', { game: g }) %><% }) %>
   </div>
-  <p class="empty" id="noResults" style="display:none">Sonuç bulunamadı.</p>
+  <p class="empty" id="noResults" style="display:none">Aramanıza uygun oyun bulunamadı.</p>
 </section>
 
 <script>
