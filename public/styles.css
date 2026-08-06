@@ -758,11 +758,35 @@ a:hover { color: var(--text); }
   50%  { transform: scale(1.08); }
   100% { transform: scale(1); }
 }
-@keyframes flyToCart {
-  0% {
-    opacity: 1; transform: translate(0, 0) scale(1);
-  }
-  100% {
-    opacity: 0; transform: translate(var(--fly-x, 0), var(--fly-y, -100px)) scale(0.4);
-  }
+/* ── Sales Toast & Floating Support Widgets ────────────────── */
+.sales-toast {
+  position: fixed; bottom: 24px; left: 24px; z-index: 9999;
+  background: var(--card2); border: 1px solid var(--purple);
+  padding: 12px 18px; border-radius: 16px; display: flex; align-items: center; gap: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5); font-size: .85rem;
+  animation: slideInUp .5s ease;
+}
+.sales-toast-avatar {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--purple), var(--orange));
+  display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; flex-shrink: 0;
+}
+
+.support-widget {
+  position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.support-btn {
+  width: 48px; height: 48px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; color: #fff; text-decoration: none;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4); transition: transform .2s ease;
+}
+.support-btn:hover { transform: scale(1.15); }
+.support-btn.wa { background: #25D366; }
+.support-btn.dc { background: #5865F2; }
+
+@keyframes slideInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
 }
