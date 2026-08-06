@@ -36,7 +36,6 @@ const s3 = isR2Configured()
           region: 'auto',
           endpoint: endpoint,
           credentials: { accessKeyId: accessKey, secretAccessKey: secretKey },
-          forcePathStyle: true,
         });
         return { client, GetObjectCommand, PutObjectCommand, getSignedUrl };
       } catch (e) {
@@ -76,10 +75,10 @@ async function uploadToR2(fileKey, localFilePath) {
       ContentType: 'application/zip'
     });
     await s3.client.send(cmd);
-    console.log(`✅ Dosya başarıyla Cloudflare R2 Bucket'ına aktarıldı: ${fileKey} → s3://${bucketName}/${fileKey}`);
+    console.log(`✅ Dosya başarıyla Cloudflare R2 Bucket'ına aktarıldı: ${fileKey}`);
     return true;
   } catch (e) {
-    console.error('❌ Cloudflare R2 yükleme hatası:', e.code || e.name, '-', e.message, '(bucket:', bucketName + ', key:', fileKey + ')');
+    console.error('❌ Cloudflare R2 yükleme hatası:', e.message);
     return false;
   }
 }

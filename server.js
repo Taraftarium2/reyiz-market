@@ -8,7 +8,7 @@ const fs = require('fs');
 
 const db = require('./db');
 const { getUser } = require('./auth');
-const { STORAGE_DIR, isR2Configured } = require('./storage');
+const { STORAGE_DIR } = require('./storage');
 
 const app = express();
 app.disable('x-powered-by');
@@ -130,9 +130,4 @@ process.on('unhandledRejection', (err) => console.error('Unhandled Rejection:', 
 process.on('uncaughtException', (err) => console.error('Uncaught Exception:', err));
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  const r2msg = isR2Configured() ? '✅ Cloudflare R2 aktif (bucket: ' + (process.env.R2_BUCKET || '') + ')' : '⚠️ R2 YAPILANDIRILMADI — dosyalar sadece geçici local storage\'de saklanacak. Railway "Variables" bölümüne R2_* ekle.';
-  console.log('⚡ Reyiz Market çalışıyor → http://localhost:' + PORT);
-  console.log(r2msg);
-  console.log('📂 STORAGE_DIR:', STORAGE_DIR);
-});
+app.listen(PORT, () => console.log('⚡ Reyiz Market çalışıyor → http://localhost:' + PORT));
