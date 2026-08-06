@@ -7,43 +7,68 @@ router.get('/kayit', (req, res) => { res.locals.title = 'Kayıt Ol'; res.render(
 router.get('/giris', (req, res) => { res.locals.title = 'Giriş Yap'; res.render('login'); });
 
 router.post('/kayit', async (req, res) => {
-  const { name, email, password } = req.body;
-  if (!email || !password || password.length < 6) {
-    return res.render('register', { error: 'Geçerli bir e-posta ve en az 6 karakterli şifre girin.' });
-  }
-  const hash = await bcrypt.hash(password, 10);
   try {
+    const { name, email, password } = req.body || {};
+    if (!email || !password || typeof password !== 'string' || password.length < 6) {
+      return res.render('register', { error: 'Geçerli bir e-posta ve en az 6 karakterli şifre girin.' });
+    }
+    const cleanEmail = String(email).trim().toLowerCase();
+    if (!cleanEmail.includes('@')) {
+      return res.render('register', { error: 'Geçerli bir e-posta adresi girin.' });
+    }
+    
+    // E-posta zaten kayıtlı mı kontrol et
+    const existing = await db.query('SELECT id FROM users WHERE LOWER(email)=$1', [cleanEmail]);
+    if (existing.rows && existing.rows.length > 0) {
+      return res.render('register', { error: 'Bu e-posta adresi zaten kayıtlı. Giriş yapabilirsiniz.' });
+    }
+
+    const cleanName = (name && String(name).trim()) || cleanEmail.split('@')[0];
+    const hash = await bcrypt.hash(password, 10);
+    
     const r = await db.query(
-      'INSERT INTO users (email, password_hash, name) VALUES ($1,$2,$3) RETURNING id, email, role',
-      [email, hash, name || email.split('@')[0]]
+      'INSERT INTO users (email, password_hash, name, role) VALUES ($1,$2,$3,$4) RETURNING id, email, role',
+      [cleanEmail, hash, cleanName, 'user']
     );
     const user = r.rows[0];
-    res.cookie('token', signToken(user), { httpOnly: true, maxAge: 7 * 24 * 3600 * 1000 });
-    res.redirect('/profil/kutuphanem');
+    res.cookie('token', signToken(user), { httpOnly: true, path: '/', maxAge: 7 * 24 * 3600 * 1000 });
+    return res.redirect('/profil/kutuphanem');
   } catch (e) {
-    if (e.code === '23505') return res.render('register', { error: 'Bu e-posta zaten kayıtlı.' });
-    res.render('register', { error: 'Bir hata oluştu: ' + e.message });
+    console.error('Kayıt olma hatası:', e);
+    return res.render('register', { error: 'Kayıt olunurken bir hata oluştu: ' + e.message });
   }
 });
 
 router.post('/giris', async (req, res) => {
-  const { email, password } = req.body;
-  const r = await db.query('SELECT * FROM users WHERE email=$1', [email]);
-  const user = r.rows[0];
-  if (!user || !(await bcrypt.compare(password, user.password_hash))) {
-    return res.render('login', { error: 'E-posta veya şifre hatalı.' });
+  try {
+    const { email, password } = req.body || {};
+    if (!email || !password) {
+      return res.render('login', { error: 'E-posta ve şifre giriniz.' });
+    }
+    const cleanEmail = String(email).trim().toLowerCase();
+    const r = await db.query('SELECT * FROM users WHERE LOWER(email)=$1', [cleanEmail]);
+    const user = r.rows[0];
+    if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+      return res.render('login', { error: 'E-posta veya şifre hatalı.' });
+    }
+    res.cookie('token', signToken(user), { httpOnly: true, path: '/', maxAge: 7 * 24 * 3600 * 1000 });
+    return res.redirect(user.role === 'admin' ? '/admin' : '/profil/kutuphanem');
+  } catch (e) {
+    console.error('Giriş hatası:', e);
+    return res.render('login', { error: 'Giriş yapılırken bir hata oluştu: ' + e.message });
   }
-  res.cookie('token', signToken(user), { httpOnly: true, maxAge: 7 * 24 * 3600 * 1000 });
-  // Admin ise admin paneline, normal kullanıcı kütüphaneye
-  res.redirect(user.role === 'admin' ? '/admin' : '/profil/kutuphanem');
 });
 
-router.get('/cikis', (req, res) => { res.clearCookie('token'); res.redirect('/'); });
+router.get('/cikis', (req, res) => { res.clearCookie('token', { path: '/' }); res.redirect('/'); });
 
 router.get('/profil', requireAuth, async (req, res) => {
   res.locals.title = 'Profil';
-  const r = await db.query('SELECT email, name, role, created_at FROM users WHERE id=$1', [req.user.id]);
-  res.render('profile', { info: r.rows[0] });
+  try {
+    const r = await db.query('SELECT email, name, role, created_at FROM users WHERE id=$1', [req.user.id]);
+    res.render('profile', { info: r.rows[0] });
+  } catch (e) {
+    res.redirect('/');
+  }
 });
 
 module.exports = router;
