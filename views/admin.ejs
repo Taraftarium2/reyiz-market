@@ -82,6 +82,63 @@
           <button class="btn big" type="submit" style="margin-top:10px">+ Oyunu Kataloğa Ekle</button>
         </form>
       </div>
+
+      <!-- Kullanıcıya Doğrudan Oyun Tanımla -->
+      <div class="admin-panel-box" style="margin-top:20px">
+        <div class="panel-title">🎁 Kullanıcıya Oyun Tanımla</div>
+        <form method="post" action="/admin/kullaniciya-oyun-ekle" class="form">
+          <div class="form-group">
+            <label>Kullanıcı E-postası *</label>
+            <input name="email" placeholder="kullanici@mail.com" required>
+          </div>
+          <div class="form-group">
+            <label>Tanımlanacak Oyun *</label>
+            <select name="game_id" style="width:100%;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:10px;color:var(--text)" required>
+              <% games.forEach(function(g){ %>
+                <option value="<%= g.id %>"><%= g.title %> (₺<%= Number(g.price).toFixed(0) %>)</option>
+              <% }); %>
+            </select>
+          </div>
+          <button class="btn ghost" type="submit" style="width:100%;margin-top:8px">+ Kütüphaneye Tanımla</button>
+        </form>
+      </div>
+
+      <!-- İndirim Kuponu Yönetimi -->
+      <div class="admin-panel-box" style="margin-top:20px">
+        <div class="panel-title">🎟️ İndirim Kuponu Oluştur</div>
+        <form method="post" action="/admin/kupon" class="form">
+          <div class="form-group">
+            <label>Kupon Kodu *</label>
+            <input name="code" placeholder="Örn: REYIZ50" style="text-transform:uppercase;font-weight:700" required>
+          </div>
+          <div class="form-group">
+            <label>İndirim Yüzdesi (%)</label>
+            <input name="discount_percent" type="number" min="0" max="100" placeholder="20">
+          </div>
+          <div class="form-group">
+            <label>Veya Sabit İndirim Tutarı (₺)</label>
+            <input name="discount_amount" type="number" min="0" placeholder="50">
+          </div>
+          <button class="btn ghost" type="submit" style="width:100%;margin-top:8px">+ Kupon Oluştur</button>
+        </form>
+
+        <% if (typeof coupons !== 'undefined' && coupons && coupons.length > 0) { %>
+          <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px">
+            <div style="font-size:.85rem;font-weight:700;margin-bottom:8px">Aktif Kuponlar:</div>
+            <% coupons.forEach(function(c){ %>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:.85rem;border-bottom:1px solid var(--border)">
+                <div>
+                  <strong style="color:var(--purple2)"><%= c.code %></strong>
+                  <span style="color:var(--muted);font-size:.78rem">(<%= c.discount_percent > 0 ? ('%' + c.discount_percent + ' İndirim') : ('₺' + c.discount_amount + ' İndirim') %>)</span>
+                </div>
+                <form method="post" action="/admin/kupon/<%= c.id %>/sil" style="margin:0">
+                  <button class="btn ghost sm" style="color:var(--muted);padding:2px 6px" title="Kuponu Sil">🗑</button>
+                </form>
+              </div>
+            <% }); %>
+          </div>
+        <% } %>
+      </div>
     </div>
 
     <!-- Sağ Kolon: Oyunlar, Siparişler ve Kullanıcılar -->
