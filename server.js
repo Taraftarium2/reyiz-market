@@ -1,20 +1,29 @@
 require('dotenv').config();
+require('express-async-errors'); // async route hatalarını otomatik olarak hata yakalayıcıya yönlendirir
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const fs = require('fs');
 
+const db = require('./db');
 const { getUser } = require('./auth');
 const { STORAGE_DIR } = require('./storage');
 
 const app = express();
+app.disable('x-powered-by');
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Sağlık kontrolü (Railway / uptime monitor)
+app.get('/health', async (req, res) => {
+  try { await db.query('SELECT 1'); res.send('ok'); }
+  catch (e) { res.status(503).send('db error'); }
+});
 
 // storage klasörünün var olduğundan emin ol
 fs.mkdirSync(STORAGE_DIR, { recursive: true });
@@ -42,6 +51,16 @@ app.use('/', require('./routes/library'));
 app.use('/admin', require('./routes/admin'));
 
 app.use((req, res) => res.status(404).render('error', { message: 'Sayfa bulunamadı.', status: 404 }));
+
+// Global hata yakalayıcı — uygulama çökmesin, temiz hata sayfası göstersin
+app.use((err, req, res, next) => {
+  console.error('❌ Hata:', err);
+  res.status(500).render('error', { message: 'Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.', status: 500 });
+});
+
+// Beklenmedik çökmelere karşı koruma (Node çökmesin)
+process.on('unhandledRejection', (err) => console.error('Unhandled Rejection:', err));
+process.on('uncaughtException', (err) => console.error('Uncaught Exception:', err));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log('⚡ Reyiz Market çalışıyor → http://localhost:' + PORT));
