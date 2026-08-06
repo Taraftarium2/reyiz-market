@@ -9,7 +9,9 @@ const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
 
 async function main() {
   const targetStorageDir = (STORAGE_DIR && String(STORAGE_DIR).trim() !== '') ? STORAGE_DIR : path.join(__dirname, 'storage');
-  fs.mkdirSync(targetStorageDir, { recursive: true });
+  if (!fs.existsSync(targetStorageDir)) {
+    try { fs.mkdirSync(targetStorageDir, { recursive: true }); } catch (e) { if (e.code !== 'EEXIST') throw e; }
+  }
   await db.query(schema);
 
   // Admin hesabı

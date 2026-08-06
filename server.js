@@ -27,8 +27,10 @@ app.get('/health', async (req, res) => {
 
 // storage klasörünün var olduğundan emin ol
 const targetStorageDir = (STORAGE_DIR && String(STORAGE_DIR).trim() !== '') ? STORAGE_DIR : path.join(__dirname, 'storage');
-fs.mkdirSync(targetStorageDir, { recursive: true });
-fs.writeFileSync(path.join(targetStorageDir, '.gitkeep'), '');
+if (!fs.existsSync(targetStorageDir)) {
+  try { fs.mkdirSync(targetStorageDir, { recursive: true }); } catch (e) { if (e.code !== 'EEXIST') throw e; }
+}
+try { fs.writeFileSync(path.join(targetStorageDir, '.gitkeep'), ''); } catch (e) {}
 
 // Tüm istekler için ortak veriler (kullanıcı, sepet sayısı, başlık)
 app.use((req, res, next) => {
