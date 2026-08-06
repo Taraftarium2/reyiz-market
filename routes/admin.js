@@ -37,6 +37,8 @@ router.get('/', requireAdmin, async (req, res) => {
     `)).rows;
 
     users = (await db.query('SELECT id, email, name, role, created_at FROM users ORDER BY created_at DESC LIMIT 50')).rows;
+    let coupons = [];
+    try { coupons = (await db.query('SELECT * FROM coupons ORDER BY created_at DESC')).rows; } catch(e) {}
 
     const rRev = await db.query(`SELECT COALESCE(SUM(total_amount),0) AS v FROM orders WHERE status='paid'`);
     stats.totalRevenue = rRev.rows[0]?.v || 0;
@@ -46,11 +48,40 @@ router.get('/', requireAdmin, async (req, res) => {
     stats.totalUsers = rUsers.rows[0]?.v || 0;
     const rOrd = await db.query(`SELECT COUNT(*) AS v FROM orders`);
     stats.totalOrders = rOrd.rows[0]?.v || 0;
+
+    res.render('admin', { games, orders, users, coupons, stats });
+    return;
   } catch (err) {
     console.error('⚠️ Admin paneli sorgu uyarısı:', err.message);
   }
 
-  res.render('admin', { games, orders, users, stats });
+  res.render('admin', { games: [], orders: [], users: [], coupons: [], stats });
+});
+
+// ── Kupon Ekle ───────────────────────────────────────────────────────
+router.post('/kupon', requireAdmin, async (req, res) => {
+  const { code, discount_percent, discount_amount } = req.body;
+  if (!code) return res.redirect('/admin');
+  try {
+    const cleanCode = code.trim().toUpperCase();
+    await db.query(
+      'INSERT INTO coupons (code, discount_percent, discount_amount, active) VALUES ($1,$2,$3,true) ON CONFLICT (code) DO NOTHING',
+      [cleanCode, Number(discount_percent || 0), Number(discount_amount || 0)]
+    );
+  } catch (e) {
+    console.error('Kupon ekleme hatası:', e);
+  }
+  res.redirect('/admin');
+});
+
+// ── Kupon Sil ────────────────────────────────────────────────────────
+router.post('/kupon/:id/sil', requireAdmin, async (req, res) => {
+  try {
+    await db.query('DELETE FROM coupons WHERE id=$1', [Number(req.params.id)]);
+  } catch (e) {
+    console.error('Kupon silme hatası:', e);
+  }
+  res.redirect('/admin');
 });
 
 // ── Oyun Ekle ──────────────────────────────────────────────────────
@@ -121,25 +152,50 @@ router.post('/siparis/:id/onayla', requireAdmin, async (req, res) => {
   const cli = await db.connect();
   try {
     await cli.query('BEGIN');
-    await cli.query(`UPDATE orders SET status='paid' WHERE id=$1 AND status='pending'`, [orderId]);
+    await cli.query(`UPDATE orders SET status='paid' WHERE id=$1`, [orderId]);
     
-    const items = (await cli.query(
-      `SELECT oi.game_id, o.user_id FROM order_items oi JOIN orders o ON o.id = oi.order_id WHERE oi.order_id = $1`,
-      [orderId]
-    )).rows;
+    // Siparişin kullanıcı id'sini al
+    const orderRes = await cli.query(`SELECT user_id FROM orders WHERE id=$1`, [orderId]);
+    const userId = orderRes.rows[0]?.user_id;
 
-    for (const item of items) {
-      await cli.query(
-        `INSERT INTO user_library (user_id, game_id) VALUES ($1,$2) ON CONFLICT DO NOTHING`,
-        [item.user_id, item.game_id]
-      );
+    if (userId) {
+      // Siparişe ait tüm oyun id'lerini al ve kütüphaneye ekle
+      const itemsRes = await cli.query(`SELECT game_id FROM order_items WHERE order_id=$1`, [orderId]);
+      for (const item of itemsRes.rows) {
+        await cli.query(
+          `INSERT INTO user_library (user_id, game_id) VALUES ($1,$2) ON CONFLICT (user_id, game_id) DO NOTHING`,
+          [userId, item.game_id]
+        );
+      }
     }
     await cli.query('COMMIT');
+    console.log(`✅ Sipariş #${orderId} onaylandı ve user_library kütüphanesine eklendi.`);
   } catch (e) {
     await cli.query('ROLLBACK');
     console.error('Sipariş onay hatası:', e);
   } finally {
     cli.release();
+  }
+  res.redirect('/admin');
+});
+
+// ── Admin: Kullanıcıya Doğrudan Oyun Tanımla (E-posta ile) ───────────
+router.post('/kullaniciya-oyun-ekle', requireAdmin, async (req, res) => {
+  const { email, game_id } = req.body;
+  if (!email || !game_id) return res.redirect('/admin');
+  try {
+    const cleanEmail = String(email).trim().toLowerCase();
+    const userRes = await db.query('SELECT id FROM users WHERE LOWER(email)=$1', [cleanEmail]);
+    const user = userRes.rows[0];
+    if (user) {
+      await db.query(
+        'INSERT INTO user_library (user_id, game_id) VALUES ($1,$2) ON CONFLICT (user_id, game_id) DO NOTHING',
+        [user.id, Number(game_id)]
+      );
+      console.log(`✅ ${cleanEmail} kullanıcısına ${game_id} nolu oyun kütüphaneye doğrudan tanımlandı.`);
+    }
+  } catch (e) {
+    console.error('Doğrudan oyun tanımlama hatası:', e);
   }
   res.redirect('/admin');
 });

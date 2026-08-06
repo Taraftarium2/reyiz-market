@@ -5,6 +5,25 @@ const { requireAuth } = require('../auth');
 function readCart(req) { try { return JSON.parse(req.cookies.cart || '[]'); } catch (e) { return []; } }
 function writeCart(res, ids) { res.cookie('cart', JSON.stringify(ids), { maxAge: 7 * 24 * 3600 * 1000 }); }
 
+function readCoupon(req) { try { return JSON.parse(req.cookies.coupon || 'null'); } catch (e) { return null; } }
+function writeCoupon(res, coupon) { res.cookie('coupon', JSON.stringify(coupon), { maxAge: 7 * 24 * 3600 * 1000 }); }
+function clearCoupon(res) { res.clearCookie('coupon'); }
+
+function calculateCartTotals(items, coupon) {
+  const subtotal = items.reduce((s, g) => s + Number(g.price), 0);
+  let discount = 0;
+  if (coupon && subtotal > 0) {
+    if (coupon.discount_percent > 0) {
+      discount = (subtotal * coupon.discount_percent) / 100;
+    } else if (coupon.discount_amount > 0) {
+      discount = Number(coupon.discount_amount);
+    }
+    if (discount > subtotal) discount = subtotal;
+  }
+  const total = Math.max(0, subtotal - discount);
+  return { subtotal, discount, total };
+}
+
 router.post('/sepet/ekle', (req, res) => {
   const id = Number(req.body.game_id);
   const ids = readCart(req);
@@ -20,13 +39,38 @@ router.post('/sepet/ekle', (req, res) => {
 router.get('/sepet', async (req, res) => {
   res.locals.title = 'Sepet';
   const ids = readCart(req);
-  let items = [], total = 0;
+  const coupon = readCoupon(req);
+  let items = [];
   if (ids.length) {
     const r = await db.query('SELECT * FROM games WHERE id = ANY($1)', [ids]);
     items = r.rows;
-    total = items.reduce((s, g) => s + Number(g.price), 0);
   }
-  res.render('cart', { items, total });
+  const { subtotal, discount, total } = calculateCartTotals(items, coupon);
+  const couponError = req.query.couponError || null;
+  res.render('cart', { items, subtotal, discount, total, coupon, couponError });
+});
+
+// Kupon Kodu Uygula
+router.post('/sepet/kupon', async (req, res) => {
+  const code = (req.body.code || '').trim().toUpperCase();
+  if (!code) return res.redirect('/sepet');
+  try {
+    const r = await db.query('SELECT * FROM coupons WHERE UPPER(code)=$1 AND active=true', [code]);
+    const coupon = r.rows[0];
+    if (!coupon) {
+      return res.redirect('/sepet?couponError=' + encodeURIComponent('Geçersiz veya süresi dolmuş kupon kodu.'));
+    }
+    writeCoupon(res, { code: coupon.code, discount_percent: coupon.discount_percent, discount_amount: coupon.discount_amount });
+    res.redirect('/sepet');
+  } catch (e) {
+    res.redirect('/sepet');
+  }
+});
+
+// Kupon Kodu Kaldır
+router.post('/sepet/kupon/kaldir', (req, res) => {
+  clearCoupon(res);
+  res.redirect('/sepet');
 });
 
 router.post('/sepet/sil/:id', (req, res) => {
@@ -38,13 +82,14 @@ router.post('/sepet/sil/:id', (req, res) => {
 router.get('/odeme', requireAuth, async (req, res) => {
   res.locals.title = 'Ödeme';
   const ids = readCart(req);
-  let items = [], total = 0;
+  const coupon = readCoupon(req);
+  let items = [];
   if (ids.length) {
     const r = await db.query('SELECT * FROM games WHERE id = ANY($1)', [ids]);
     items = r.rows;
-    total = items.reduce((s, g) => s + Number(g.price), 0);
   }
-  res.render('checkout', { items, total });
+  const { subtotal, discount, total } = calculateCartTotals(items, coupon);
+  res.render('checkout', { items, subtotal, discount, total, coupon });
 });
 
 router.post('/odeme', requireAuth, async (req, res) => {
