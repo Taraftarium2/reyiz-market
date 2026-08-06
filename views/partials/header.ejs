@@ -7,19 +7,20 @@
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
+<div class="announce">⚡ TikTok LIVE oyunlar için dijital mağaza — anında teslimat, kalıcı erişim.</div>
 <header class="nav">
   <a class="logo" href="/">⚡ Reyiz<span>Market</span></a>
-  <button class="burger" onclick="document.body.classList.toggle('menu-open')">☰</button>
+  <button class="burger">☰</button>
   <nav class="links">
     <a href="/oyunlar">Oyunlar</a>
-    <a href="/sepet">Sepet (<%= cartCount %>)</a>
+    <a href="/sepet">Sepet <span class="badge"><%= cartCount %></span></a>
     <% if (user) { %>
       <a href="/profil/kutuphanem">Kütüphanem</a>
       <a href="/profil">Profil</a>
-      <a href="/cikis">Çıkış</a>
+      <a class="btn ghost sm" href="/cikis">Çıkış</a>
     <% } else { %>
       <a href="/giris">Giriş</a>
-      <a class="btn" href="/kayit">Üye Ol</a>
+      <a class="btn sm" href="/kayit">Üye Ol</a>
     <% } %>
   </nav>
 </header>
