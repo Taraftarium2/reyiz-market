@@ -1,8 +1,10 @@
 <%- include('partials/header') %>
-<section class="section narrow center success">
-  <div class="big-emoji">🎉</div>
-  <h2>Siparişin tamamlandı!</h2>
+<section class="section narrow success">
+  <h2>🎉 Siparişin tamamlandı!</h2>
   <p>Oyunların hesabına tanımlandı. Artık Kütüphanem'den indirebilirsin.</p>
-  <a class="btn big" href="/profil/kutuphanem">Kütüphanem'e Git →</a>
+  <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:24px">
+    <a class="btn big" href="/profil/kutuphanem">⬇ Kütüphanem'e Git</a>
+    <a class="btn ghost" href="/siparislerim">Siparişlerim</a>
+  </div>
 </section>
 <%- include('partials/footer') %>
