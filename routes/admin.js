@@ -18,25 +18,34 @@ const upload = multer({
 
 router.get('/', requireAdmin, async (req, res) => {
   res.locals.title = 'Admin Panel';
-  const games = (await db.query('SELECT * FROM games ORDER BY created_at DESC')).rows;
-  const orders = (await db.query(`
-    SELECT o.*, u.email, u.name AS user_name,
-      json_agg(json_build_object('title', g.title, 'price', oi.price_at_purchase)) AS items
-    FROM orders o
-    JOIN users u ON u.id = o.user_id
-    LEFT JOIN order_items oi ON oi.order_id = o.id
-    LEFT JOIN games g ON g.id = oi.game_id
-    GROUP BY o.id, u.email, u.name
-    ORDER BY o.created_at DESC
-    LIMIT 100
-  `)).rows;
+  let games = [], orders = [];
+  let stats = { totalRevenue: 0, pendingCount: 0, totalUsers: 0, totalOrders: 0 };
 
-  // İstatistikler
-  const stats = {};
-  stats.totalRevenue = (await db.query(`SELECT COALESCE(SUM(total_amount),0) AS v FROM orders WHERE status='paid'`)).rows[0].v;
-  stats.pendingCount  = (await db.query(`SELECT COUNT(*) AS v FROM orders WHERE status='pending'`)).rows[0].v;
-  stats.totalUsers    = (await db.query(`SELECT COUNT(*) AS v FROM users WHERE role='user'`)).rows[0].v;
-  stats.totalOrders   = (await db.query(`SELECT COUNT(*) AS v FROM orders`)).rows[0].v;
+  try {
+    games = (await db.query('SELECT * FROM games ORDER BY created_at DESC')).rows;
+    orders = (await db.query(`
+      SELECT o.*, u.email, u.name AS user_name,
+        json_agg(json_build_object('title', g.title, 'price', oi.price_at_purchase)) AS items
+      FROM orders o
+      JOIN users u ON u.id = o.user_id
+      LEFT JOIN order_items oi ON oi.order_id = o.id
+      LEFT JOIN games g ON g.id = oi.game_id
+      GROUP BY o.id, u.email, u.name
+      ORDER BY o.created_at DESC
+      LIMIT 100
+    `)).rows;
+
+    const rRev = await db.query(`SELECT COALESCE(SUM(total_amount),0) AS v FROM orders WHERE status='paid'`);
+    stats.totalRevenue = rRev.rows[0]?.v || 0;
+    const rPend = await db.query(`SELECT COUNT(*) AS v FROM orders WHERE status='pending'`);
+    stats.pendingCount = rPend.rows[0]?.v || 0;
+    const rUsers = await db.query(`SELECT COUNT(*) AS v FROM users WHERE role='user'`);
+    stats.totalUsers = rUsers.rows[0]?.v || 0;
+    const rOrd = await db.query(`SELECT COUNT(*) AS v FROM orders`);
+    stats.totalOrders = rOrd.rows[0]?.v || 0;
+  } catch (err) {
+    console.error('⚠️ Admin paneli sorgu uyarısı:', err.message);
+  }
 
   res.render('admin', { games, orders, stats });
 });
