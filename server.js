@@ -32,6 +32,28 @@ if (!fs.existsSync(targetStorageDir)) {
 }
 try { fs.writeFileSync(path.join(targetStorageDir, '.gitkeep'), ''); } catch (e) {}
 
+// Otomatik veritabanı kurulumu (Tablolar yoksa oluşturur)
+(async function initDatabase() {
+  try {
+    const schemaSql = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
+    await db.query(schemaSql);
+    // İlk admin hesabı kontrolü
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@reyizmarket.click';
+    const adminPass = process.env.ADMIN_PASSWORD || 'admin123';
+    const existing = await db.query('SELECT id FROM users WHERE email=$1', [adminEmail]);
+    if (!existing.rows.length) {
+      const bcrypt = require('bcryptjs');
+      const hash = await bcrypt.hash(adminPass, 10);
+      await db.query('INSERT INTO users (email, password_hash, name, role) VALUES ($1,$2,$3,$4)',
+        [adminEmail, hash, 'Admin', 'admin']);
+      console.log('✅ Otomatik Admin oluşturuldu:', adminEmail);
+    }
+    console.log('✅ Veritabanı tabloları hazır.');
+  } catch (err) {
+    console.error('⚠️ DB otomatik kurulum uyarısı:', err.message);
+  }
+})();
+
 // Tüm istekler için ortak veriler (kullanıcı, sepet sayısı, başlık)
 app.use((req, res, next) => {
   res.locals.user = getUser(req);
