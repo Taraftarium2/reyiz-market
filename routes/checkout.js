@@ -1,29 +1,47 @@
-// routes/checkout.js - Sipariş verildiği an çalışan blok
+const express = require('express');
+const router = express.Router();
+const db = require('../db');
+const { requireAuth } = require('../middlewares/auth');
 
-// 1. Siparişi veritabanına 'paid' (ödendi) durumuyla kaydedin
-const orderResult = await db.query(
-    `INSERT INTO orders (user_id, total_amount, status, created_at) 
-     VALUES ($1, $2, 'paid', NOW()) RETURNING id`,
-    [req.user.id, totalAmount]
-);
-const orderId = orderResult.rows[0].id;
+// Siparişi Tamamlama Rotası (async fonksiyon eklendi)
+router.post('/checkout', requireAuth, async (req, res) => {
+    try {
+        const { cartItems, totalAmount } = req.body;
 
-// 2. Sepetteki ürünleri ANINDA kütüphaneye ekleyin
-for (const item of cartItems) {
-    // Sipariş detay kaydı
-    await db.query(
-        `INSERT INTO order_items (order_id, game_id, price) VALUES ($1, $2, $3)`,
-        [orderId, item.game_id, item.price]
-    );
+        // 1. Siparişi veritabanına 'paid' (ödendi) olarak ekle
+        const orderResult = await db.query(
+            `INSERT INTO orders (user_id, total_amount, status, created_at) 
+             VALUES ($1, $2, 'paid', NOW()) RETURNING id`,
+            [req.user.id, totalAmount || 0]
+        );
+        const orderId = orderResult.rows[0].id;
 
-    // Kütüphaneye anında ekleme (İndirme linkinin hemen çıkması için)
-    await db.query(
-        `INSERT INTO user_library (user_id, game_id, purchased_at) 
-         VALUES ($1, $2, NOW()) 
-         ON CONFLICT (user_id, game_id) DO NOTHING`,
-        [req.user.id, item.game_id]
-    );
-}
+        // 2. Ürünleri kütüphaneye anında ekle
+        if (cartItems && Array.isArray(cartItems)) {
+            for (const item of cartItems) {
+                // Sipariş detay kaydı
+                await db.query(
+                    `INSERT INTO order_items (order_id, game_id, price) VALUES ($1, $2, $3)`,
+                    [orderId, item.game_id, item.price]
+                );
 
-// 3. Müşteriyi doğrudan indirme butonlarının olduğu kütüphanem sayfasına yönlendirin
-res.redirect('/profil/kutuphanem');
+                // Müşterinin kütüphanesine indirme linki çıkması için ekleme
+                await db.query(
+                    `INSERT INTO user_library (user_id, game_id, purchased_at) 
+                     VALUES ($1, $2, NOW()) 
+                     ON CONFLICT (user_id, game_id) DO NOTHING`,
+                    [req.user.id, item.game_id]
+                );
+            }
+        }
+
+        // 3. Müşteriyi indirme linkinin olacağı kütüphane sayfasına yönlendir
+        res.redirect('/profil/kutuphanem');
+
+    } catch (err) {
+        console.error('Checkout hatası:', err);
+        res.status(500).render('error', { message: 'Sipariş tamamlanırken bir hata oluştu.' });
+    }
+});
+
+module.exports = router;
