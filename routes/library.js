@@ -14,10 +14,12 @@ router.get('/profil/kutuphanem', requireAuth, async (req, res) => {
        WHERE ul.user_id = $1 ORDER BY ul.purchased_at DESC`,
       [req.user.id]
     );
-    const games = r.rows.map((g) => ({
-      ...g,
-      downloadUrl: storage.downloadUrl(g, req.protocol + '://' + req.get('host'))
-    }));
+
+    const games = [];
+    for (const g of r.rows) {
+      const dUrl = await storage.downloadUrl(g, req.protocol + '://' + req.get('host'));
+      games.push({ ...g, downloadUrl: dUrl });
+    }
 
     // Bekleyen sipariş sayısı kontrolü
     const pendingOrders = (await db.query(
@@ -68,9 +70,10 @@ router.get('/indir/:id', requireAuth, async (req, res) => {
     await db.query('UPDATE user_library SET download_count = download_count + 1 WHERE user_id=$1 AND game_id=$2', [req.user.id, g.id]);
   } catch(e) {}
 
-  // R2 modu: S3 presigned URL bağlantısına yönlendir
-  if (storage.s3) {
-    return res.redirect(storage.downloadUrl(g));
+  // Cloudflare R2 modu: R2 presigned URL bağlantısına güvenle yönlendir
+  if (storage.isR2Configured()) {
+    const r2Url = await storage.getR2SignedUrl(g.file_key);
+    if (r2Url) return res.redirect(r2Url);
   }
 
   // Yerel depolama modu: Dosya yoksa otomatik .zip oluşturup doğrudan indirtir
