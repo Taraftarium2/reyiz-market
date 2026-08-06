@@ -1,116 +1,52 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-  <meta name="theme-color" content="#080810">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  
-  <!-- 🔍 Google & Bing 1st Page Targeted SEO -->
-  <title><%= title %> · TikTok İnteraktif Oyunlar · TikTok Interactive Games</title>
-  <meta name="title" content="<%= title %> · TikTok İnteraktif Oyunlar · TikTok Interactive Games">
-  <meta name="description" content="Reyiz Market — TikTok interaktif oyunlar ve TikTok interactive games dijital mağazası. Canlı yayın chat & hediye etkileşimli Node.js oyun yazılımları. Anında güvenli indirme!">
-  <meta name="keywords" content="tiktok interaktif oyunlar, tiktok interactive games, tiktok canlı yayın oyunları, tiktok live interactive games, tiktok chat games, tiktok gift games, nodejs tiktok botu, reyiz market, canlı yayın oyun yazılımları">
-  <meta name="author" content="Reyiz Market">
-  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
-  <meta name="googlebot" content="index, follow">
-  <link rel="canonical" href="https://reyizmarket.click/">
-
-  <!-- Open Graph / Social Media -->
-  <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Reyiz Market">
-  <meta property="og:url" content="https://reyizmarket.click/">
-  <meta property="og:title" content="TikTok İnteraktif Oyunlar · TikTok Interactive Games — Reyiz Market">
-  <meta property="og:description" content="TikTok LIVE yayıncıları için interaktif oyunlar ve TikTok interactive games mağazası. Satın al, Kütüphanenden tek tıkla indir ve yayınını canlıya taşı!">
-  <meta property="og:image" content="https://reyizmarket.click/og-image.jpg">
-
-  <!-- Twitter Card -->
-  <meta property="twitter:card" content="summary_large_image">
-  <meta property="twitter:url" content="https://reyizmarket.click/">
-  <meta property="twitter:title" content="TikTok İnteraktif Oyunlar · TikTok Interactive Games — Reyiz Market">
-  <meta property="twitter:description" content="TikTok LIVE yayıncıları için interaktif oyunlar ve TikTok interactive games mağazası. Satın al, Kütüphanenden tek tıkla indir ve yayınını canlıya taşı!">
-
-  <!-- 🌟 Google Rich Snippets & Structured Data (JSON-LD) -->
-  <script type="application/ld+json">
-  [
-    {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      "name": "Reyiz Market - TikTok İnteraktif Oyunlar",
-      "alternateName": "TikTok Interactive Games Store",
-      "url": "https://reyizmarket.click/",
-      "potentialAction": {
-        "@type": "SearchAction",
-        "target": "https://reyizmarket.click/oyunlar?q={search_term_string}",
-        "query-input": "required name=search_term_string"
-      }
-    },
-    {
-      "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
-      "name": "TikTok İnteraktif Oyunlar Altyapısı",
-      "operatingSystem": "Windows, macOS, Linux, Node.js",
-      "applicationCategory": "GameApplication",
-      "ratingValue": "4.9",
-      "ratingCount": "1280",
-      "offers": {
-        "@type": "AggregateOffer",
-        "lowPrice": "99.00",
-        "highPrice": "299.00",
-        "priceCurrency": "TRY",
-        "offerCount": "50"
-      }
-    }
-  ]
-  </script>
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="/styles.css?v=2.3.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reyiz Market - Dijital Oyun Mağazası</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-<!-- TOP ANNOUNCEMENT BANNER -->
-<div style="background: linear-gradient(90deg, #7c3aed, #ea580c); color: #fff; text-align: center; padding: 8px 16px; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.3px;">
-  🎟️ İndirim Kodu: <span style="background: rgba(255,255,255,0.25); padding: 2px 8px; border-radius: 4px; font-family: monospace;">TIKTOK20</span> ile tüm oyunlarda <b>%20 ANINDA İNDİRİM!</b>
-</div>
+    <header class="navbar">
+        <div class="container nav-container">
+            <a href="/" class="brand">
+                <i class="fa-solid fa-gamepad brand-icon"></i>
+                <span class="brand-text">REYIZ<span class="highlight">MARKET</span></span>
+            </a>
 
-<header class="nav">
-  <a class="logo" href="/">
-    <span class="logo-icon">⚡</span>
-    Reyiz<span>Market</span>
-  </a>
-  <button class="burger" id="burgerBtn" aria-label="Menüyü Aç/Kapat">☰</button>
-  <nav class="links" id="navLinks">
-    <a href="/oyunlar" style="font-weight: 600;">🎮 Oyun Mağazası</a>
-    <a href="/rehber" style="font-weight: 600;">⚡ Kurulum Rehberi</a>
-    <a href="/sepet" class="cart-nav-badge" id="navCartBadge">🛒 Sepet <span class="cart-count-pill" id="navCartCount"><%= cartCount %></span></a>
-    <% if (user) { %>
-      <a href="/siparislerim">📦 Siparişlerim</a>
-      <a href="/profil/kutuphanem" style="font-weight: 700; color: var(--yellow);">📚 Kütüphanem</a>
-      <a href="/profil">👤 Profil</a>
-      <% if (user.role === 'admin') { %><a href="/admin" class="btn sm" style="background: var(--purple);">⚙ Admin Console</a><% } %>
-      <a href="/cikis" style="color:var(--muted)">Çıkış</a>
-    <% } else { %>
-      <a href="/giris">Giriş Yap</a>
-      <a class="btn" href="/kayit">Üye Ol</a>
-    <% } %>
-  </nav>
-</header>
-<main>
-<script>
-  (function() {
-    var btn = document.getElementById('burgerBtn');
-    if (btn) {
-      btn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        document.body.classList.toggle('menu-open');
-      });
-      document.addEventListener('click', function(e) {
-        if (!e.target.closest('.nav')) {
-          document.body.classList.remove('menu-open');
-        }
-      });
-    }
-  })();
-</script>
+            <nav class="nav-links">
+                <a href="/"><i class="fa-solid fa-house"></i> Anasayfa</a>
+                <a href="/games"><i class="fa-solid fa-store"></i> Mağaza</a>
+                <% if (user) { %>
+                    <a href="/library"><i class="fa-solid fa-folder-closed"></i> Kütüphanem</a>
+                    <a href="/orders"><i class="fa-solid fa-receipt"></i> Siparişlerim</a>
+                    <% if (user.role === 'admin') { %>
+                        <a href="/admin" class="admin-badge"><i class="fa-solid fa-shield-halved"></i> Admin Panel</a>
+                    <% } %>
+                <% } %>
+            </nav>
+
+            <div class="nav-actions">
+                <a href="/checkout/cart" class="cart-btn">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    <span class="cart-count"><%= cart ? cart.length : 0 %></span>
+                </a>
+
+                <% if (user) { %>
+                    <div class="user-menu">
+                        <a href="/auth/profile" class="user-profile-btn">
+                            <i class="fa-solid fa-circle-user"></i> <%= user.username %>
+                        </a>
+                        <a href="/auth/logout" class="logout-btn" title="Çıkış Yap">
+                            <i class="fa-solid fa-right-from-bracket"></i>
+                        </a>
+                    </div>
+                <% } else { %>
+                    <a href="/auth/login" class="btn btn-outline">Giriş Yap</a>
+                    <a href="/auth/register" class="btn btn-primary">Kayıt Ol</a>
+                <% } %>
+            </div>
+        </div>
+    </header>
+    <main class="main-content">
