@@ -77,14 +77,52 @@
       .catch(function(err) { console.error('Sepete ekleme hatası:', err); });
 
       // 2.2 saniye sonra butonu eski haline çevir
-      setTimeout(function() {
-        if (btn) {
-          btn.classList.remove('btn-added');
-          btn.innerHTML = origText;
-        }
-      }, 2200);
-    }
-  });
+<!-- FLOATING CANLI DESTEK WIDGET'I -->
+<div class="support-widget">
+  <a class="support-btn wa" href="https://wa.me/905000000000?text=Merhaba,%20Reyiz%20Market%20TikTok%20oyunları%20hakkında%20bilgi%20almak%20istiyorum." target="_blank" title="WhatsApp Canlı Destek">💬</a>
+  <a class="support-btn dc" href="https://discord.gg/" target="_blank" title="Discord Topluluğumuz">🎮</a>
+</div>
+
+<!-- CANLI SATIŞ BİLDİRİMİ POP-UP SCRIPT'I (SOCIAL PROOF) -->
+<script>
+(function() {
+  var salesData = [];
+  var index = 0;
+
+  function showNextToast() {
+    if (!salesData.length) return;
+    var item = salesData[index % salesData.length];
+    index++;
+
+    var toast = document.createElement('div');
+    toast.className = 'sales-toast';
+    toast.innerHTML = 
+      '<div class="sales-toast-avatar">⚡</div>' +
+      '<div>' +
+        '<div><strong style="color:var(--purple2)">' + item.name + '</strong> az önce satın aldı:</div>' +
+        '<div style="font-weight:700;color:var(--text)">' + item.game + ' <span style="font-size:.75rem;color:var(--muted)">(' + item.time + ')</span></div>' +
+      '</div>';
+
+    document.body.appendChild(toast);
+
+    setTimeout(function() {
+      toast.style.transition = 'opacity .5s ease, transform .5s ease';
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(20px)';
+      setTimeout(function() { toast.remove(); }, 500);
+    }, 4500);
+  }
+
+  fetch('/api/recent-sales')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data && data.length) {
+        salesData = data;
+        setTimeout(showNextToast, 4000);
+        setInterval(showNextToast, 12000);
+      }
+    })
+    .catch(function(e) {});
 })();
 </script>
 </body>
