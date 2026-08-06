@@ -21,14 +21,14 @@ function isR2Configured() {
 const s3 = isR2Configured()
   ? (() => {
       try {
-        const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
+        const { S3Client, GetObjectCommand, PutObjectCommand } = require('@aws-sdk/client-s3');
         const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
         const client = new S3Client({
           region: 'auto',
           endpoint: endpoint,
           credentials: { accessKeyId: accessKey, secretAccessKey: secretKey },
         });
-        return { client, GetObjectCommand, getSignedUrl };
+        return { client, GetObjectCommand, PutObjectCommand, getSignedUrl };
       } catch (e) {
         console.error('⚠️ AWS S3 SDK yükleme uyarısı:', e.message);
         return null;
@@ -50,6 +50,24 @@ function verify(gameId, exp, sig) {
   const b = Buffer.from(String(sig));
   if (a.length !== b.length) return false;
   return crypto.timingSafeEqual(a, b);
+}
+
+async function uploadToR2(fileKey, localFilePath) {
+  if (!isR2Configured() || !s3) return false;
+  try {
+    const fileStream = fs.createReadStream(localFilePath);
+    const cmd = new s3.PutObjectCommand({
+      Bucket: bucketName,
+      Key: fileKey,
+      Body: fileStream
+    });
+    await s3.client.send(cmd);
+    console.log(`✅ Yüklenen dosya Cloudflare R2 Bucket'ına aktarıldı: ${fileKey}`);
+    return true;
+  } catch (e) {
+    console.error('⚠️ Cloudflare R2 yükleme hatası:', e.message);
+    return false;
+  }
 }
 
 async function getR2SignedUrl(fileKey) {
@@ -78,4 +96,4 @@ function filePath(fileKey) {
   return path.join(STORAGE_DIR, fileKey);
 }
 
-module.exports = { STORAGE_DIR, s3, isR2Configured, getR2SignedUrl, downloadUrl, verify, signToken, filePath };
+module.exports = { STORAGE_DIR, s3, isR2Configured, uploadToR2, getR2SignedUrl, downloadUrl, verify, signToken, filePath };
