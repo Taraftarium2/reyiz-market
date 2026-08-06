@@ -10,6 +10,10 @@ router.post('/sepet/ekle', (req, res) => {
   const ids = readCart(req);
   if (!ids.includes(id)) ids.push(id);
   writeCart(res, ids);
+  
+  if (req.xhr || (req.headers['accept'] && req.headers['accept'].includes('json')) || req.headers['x-requested-with'] === 'XMLHttpRequest') {
+    return res.json({ success: true, count: ids.length, addedId: id });
+  }
   res.redirect(req.get('referer') || '/oyunlar');
 });
 

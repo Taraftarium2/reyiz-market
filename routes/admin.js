@@ -56,14 +56,14 @@ router.get('/', requireAdmin, async (req, res) => {
 // ── Oyun Ekle ──────────────────────────────────────────────────────
 router.post('/oyun', requireAdmin, upload.single('file'), async (req, res) => {
   try {
-    const { title, slug, description, price, cover_image_url, node_version, tag, featured } = req.body;
+    const { title, slug, description, price, cover_image_url, node_version, tag, featured, external_buy_url } = req.body;
     const file_key = req.file ? req.file.filename : (req.body.file_key || 'placeholder.txt');
     const autoSlug = (slug && slug.trim()) ? slug.trim().toLowerCase() : title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
     
     await db.query(
-      `INSERT INTO games (title,slug,description,price,cover_image_url,file_key,node_version,tag,featured)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-      [title, autoSlug, description || '', price || 0, cover_image_url || '', file_key, node_version || '18', tag || 'Mini Oyun', featured ? true : false]
+      `INSERT INTO games (title,slug,description,price,cover_image_url,file_key,node_version,tag,featured,external_buy_url)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+      [title, autoSlug, description || '', price || 0, cover_image_url || '', file_key, node_version || '18', tag || 'Mini Oyun', featured ? true : false, external_buy_url || '']
     );
   } catch (e) {
     console.error('Oyun ekleme hatası:', e);
@@ -74,12 +74,12 @@ router.post('/oyun', requireAdmin, upload.single('file'), async (req, res) => {
 // ── Oyun Düzenle (POST /admin/oyun/:id/duzenle) ────────────────────
 router.post('/oyun/:id/duzenle', requireAdmin, upload.single('file'), async (req, res) => {
   const id = Number(req.params.id);
-  const { title, slug, description, price, cover_image_url, node_version, tag, featured } = req.body;
+  const { title, slug, description, price, cover_image_url, node_version, tag, featured, external_buy_url } = req.body;
   const file_key = req.file ? req.file.filename : undefined;
 
   try {
-    let sql = 'UPDATE games SET title=$1, slug=$2, description=$3, price=$4, cover_image_url=$5, node_version=$6, tag=$7, featured=$8';
-    const params = [title, slug, description, price, cover_image_url, node_version || '18', tag || 'Mini Oyun', featured ? true : false];
+    let sql = 'UPDATE games SET title=$1, slug=$2, description=$3, price=$4, cover_image_url=$5, node_version=$6, tag=$7, featured=$8, external_buy_url=$9';
+    const params = [title, slug, description, price, cover_image_url, node_version || '18', tag || 'Mini Oyun', featured ? true : false, external_buy_url || ''];
     
     if (file_key) {
       sql += ', file_key=$' + (params.length + 1);
