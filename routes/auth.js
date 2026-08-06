@@ -34,7 +34,8 @@ router.post('/giris', async (req, res) => {
     return res.render('login', { error: 'E-posta veya şifre hatalı.' });
   }
   res.cookie('token', signToken(user), { httpOnly: true, maxAge: 7 * 24 * 3600 * 1000 });
-  res.redirect('/profil/kutuphanem');
+  // Admin ise admin paneline, normal kullanıcı kütüphaneye
+  res.redirect(user.role === 'admin' ? '/admin' : '/profil/kutuphanem');
 });
 
 router.get('/cikis', (req, res) => { res.clearCookie('token'); res.redirect('/'); });
