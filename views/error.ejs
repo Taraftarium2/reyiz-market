@@ -1,6 +1,8 @@
 <%- include('partials/header') %>
-<section class="section narrow">
-  <h2><%= typeof status !== 'undefined' ? status : 500 %> — <%= message %></h2>
-  <a class="btn" href="/">Ana Sayfa</a>
+<section class="section narrow center">
+  <div class="big-emoji">😵</div>
+  <h2><%= typeof status !== 'undefined' ? status : 500 %></h2>
+  <p><%= message %></p>
+  <a class="btn" href="/">Ana Sayfa'ya Dön</a>
 </section>
 <%- include('partials/footer') %>
