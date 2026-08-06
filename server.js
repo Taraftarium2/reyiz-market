@@ -25,6 +25,30 @@ app.get('/health', async (req, res) => {
   catch (e) { res.status(503).send('db error'); }
 });
 
+// SEO: robots.txt
+app.get('/robots.txt', (req, res) => {
+  res.type('text/plain');
+  res.send("User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /profil\nSitemap: https://reyizmarket.click/sitemap.xml");
+});
+
+// SEO: sitemap.xml
+app.get('/sitemap.xml', async (req, res) => {
+  res.type('application/xml');
+  try {
+    const games = (await db.query('SELECT slug FROM games')).rows;
+    let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemapindex.org/schemas/sitemap/0.9">\n';
+    xml += '  <url><loc>https://reyizmarket.click/</loc><priority>1.0</priority></url>\n';
+    xml += '  <url><loc>https://reyizmarket.click/oyunlar</loc><priority>0.8</priority></url>\n';
+    games.forEach(g => {
+      xml += `  <url><loc>https://reyizmarket.click/oyunlar/${g.slug}</loc><priority>0.7</priority></url>\n`;
+    });
+    xml += '</urlset>';
+    res.send(xml);
+  } catch (e) {
+    res.send('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemapindex.org/schemas/sitemap/0.9"><url><loc>https://reyizmarket.click/</loc></url></urlset>');
+  }
+});
+
 // storage klasörünün var olduğundan emin ol
 const targetStorageDir = (STORAGE_DIR && String(STORAGE_DIR).trim() !== '') ? STORAGE_DIR : path.join(__dirname, 'storage');
 if (!fs.existsSync(targetStorageDir)) {
