@@ -91,11 +91,26 @@ router.post('/oyun', requireAdmin, upload.single('file'), async (req, res) => {
     const file_key = req.file ? req.file.filename : (req.body.file_key || 'placeholder.txt');
     const autoSlug = (slug && slug.trim()) ? slug.trim().toLowerCase() : title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
     
-    await db.query(
+    const r = await db.query(
       `INSERT INTO games (title,slug,description,price,cover_image_url,file_key,node_version,tag,featured,external_buy_url)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`,
       [title, autoSlug, description || '', price || 0, cover_image_url || '', file_key, node_version || '18', tag || 'Mini Oyun', featured ? true : false, external_buy_url || '']
     );
+
+    const newGameId = r.rows[0]?.id;
+
+    // R2 aktifse yüklenen dosyayı Cloudflare R2'ye aktar
+    if (req.file && storage.isR2Configured()) {
+      await storage.uploadToR2(req.file.filename, req.file.path);
+    }
+
+    // Ekleyen Admin'in kendi kütüphanesine de otomatik ekle (Hemen test edebilsin)
+    if (newGameId && req.user && req.user.id) {
+      await db.query(
+        'INSERT INTO user_library (user_id, game_id) VALUES ($1, $2) ON CONFLICT (user_id, game_id) DO NOTHING',
+        [req.user.id, newGameId]
+      );
+    }
   } catch (e) {
     console.error('Oyun ekleme hatası:', e);
   }
@@ -115,6 +130,9 @@ router.post('/oyun/:id/duzenle', requireAdmin, upload.single('file'), async (req
     if (file_key) {
       sql += ', file_key=$' + (params.length + 1);
       params.push(file_key);
+      if (req.file && storage.isR2Configured()) {
+        await storage.uploadToR2(req.file.filename, req.file.path);
+      }
     }
     
     sql += ' WHERE id=$' + (params.length + 1);
