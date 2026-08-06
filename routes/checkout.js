@@ -95,6 +95,17 @@ router.get('/odeme/beklemede/:id', requireAuth, async (req, res) => {
   });
 });
 
+// Ödemeyi Yaptım Bildirimi (Admin Bildir)
+router.post('/odeme/beklemede/:id/bildir', requireAuth, async (req, res) => {
+  const orderId = Number(req.params.id);
+  try {
+    await db.query(`UPDATE orders SET payment_provider='manual_notified' WHERE id=$1 AND user_id=$2 AND status='pending'`, [orderId, req.user.id]);
+  } catch (e) {
+    console.error('Ödeme bildirim hatası:', e);
+  }
+  res.redirect('/odeme/beklemede/' + orderId);
+});
+
 router.get('/odeme/basarili', requireAuth, (req, res) => { res.locals.title = 'Sipariş Onayı'; res.render('success'); });
 
 // iyzico ödeme sayfasından geri dönüş

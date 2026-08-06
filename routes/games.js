@@ -14,6 +14,13 @@ router.get('/', async (req, res) => {
   res.render('index', { featured, latest, tags });
 });
 
+// Rehber Sayfası (/rehber)
+router.get('/rehber', (req, res) => {
+  res.locals.title = 'Yayıncı Kurulum Rehberi';
+  res.render('guide');
+});
+
+// Oyun Kataloğu (/oyunlar)
 router.get('/oyunlar', async (req, res) => {
   res.locals.title = 'Oyun Kataloğu';
   const { q, tag } = req.query;
@@ -32,13 +39,18 @@ router.get('/oyunlar', async (req, res) => {
   res.render('game', { games, tags, q, tag });
 });
 
+// Oyun Detay Sayfası (/oyunlar/:slug)
 router.get('/oyunlar/:slug', async (req, res) => {
   try {
     const r = await db.query('SELECT * FROM games WHERE slug=$1', [req.params.slug]);
     const game = r.rows[0];
     if (!game) return res.status(404).render('error', { message: 'Oyun bulunamadı.', status: 404 });
-    res.locals.title = game.title;
-    return res.render('game', { games: [game], tags: [game.tag], q: '', tag: '' });
+    
+    // Benzer oyunlar
+    const related = (await db.query('SELECT * FROM games WHERE id != $1 ORDER BY RANDOM() LIMIT 3', [game.id])).rows;
+    
+    res.locals.title = game.title + ' — TikTok LIVE Oyunu';
+    return res.render('detail', { game, related });
   } catch (e) {
     console.error('Oyun detay uyarısı:', e.message);
     return res.status(404).render('error', { message: 'Oyun bulunamadı.', status: 404 });
