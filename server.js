@@ -31,21 +31,24 @@ app.get('/robots.txt', (req, res) => {
   res.send("User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /profil\nSitemap: https://reyizmarket.click/sitemap.xml");
 });
 
-// SEO: sitemap.xml
+// SEO: sitemap.xml (Google Indexing Standard)
 app.get('/sitemap.xml', async (req, res) => {
   res.type('application/xml');
   try {
-    const games = (await db.query('SELECT slug FROM games')).rows;
-    let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemapindex.org/schemas/sitemap/0.9">\n';
-    xml += '  <url><loc>https://reyizmarket.click/</loc><priority>1.0</priority></url>\n';
-    xml += '  <url><loc>https://reyizmarket.click/oyunlar</loc><priority>0.8</priority></url>\n';
+    const games = (await db.query('SELECT slug, created_at FROM games')).rows;
+    let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n';
+    xml += '        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n';
+    xml += '  <url><loc>https://reyizmarket.click/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>\n';
+    xml += '  <url><loc>https://reyizmarket.click/oyunlar</loc><changefreq>daily</changefreq><priority>0.9</priority></url>\n';
+    xml += '  <url><loc>https://reyizmarket.click/rehber</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>\n';
     games.forEach(g => {
-      xml += `  <url><loc>https://reyizmarket.click/oyunlar/${g.slug}</loc><priority>0.7</priority></url>\n`;
+      xml += `  <url><loc>https://reyizmarket.click/oyunlar/${g.slug}</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>\n`;
     });
     xml += '</urlset>';
     res.send(xml);
   } catch (e) {
-    res.send('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemapindex.org/schemas/sitemap/0.9"><url><loc>https://reyizmarket.click/</loc></url></urlset>');
+    res.send('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://reyizmarket.click/</loc></url></urlset>');
   }
 });
 
@@ -61,6 +64,7 @@ try { fs.writeFileSync(path.join(targetStorageDir, '.gitkeep'), ''); } catch (e)
   try {
     const schemaSql = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
     await db.query(schemaSql);
+    await db.query('ALTER TABLE games ADD COLUMN IF NOT EXISTS external_buy_url TEXT');
     
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@reyizmarket.click';
     const adminPass = process.env.ADMIN_PASSWORD || 'admin123';
