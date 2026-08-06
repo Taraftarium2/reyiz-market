@@ -75,9 +75,9 @@
           <label style="cursor:pointer;user-select:none">
             <input type="checkbox" name="featured" value="1"> ⭐ Öne çıkan çok satan oyun
           </label>
-          <div class="form-group" style="margin-top:8px">
-            <label>Oyun Dosyası (.zip)</label>
-            <input type="file" name="file" accept=".zip">
+          <div class="form-group">
+            <label>İtemSatış / Bynogame / Harici Ödeme Linki</label>
+            <input name="external_buy_url" placeholder="https://www.itemsatis.com/ilanlar/...">
           </div>
           <button class="btn big" type="submit" style="margin-top:10px">+ Oyunu Kataloğa Ekle</button>
         </form>
@@ -274,6 +274,10 @@
       <label style="cursor:pointer;user-select:none">
         <input id="editFeatured" type="checkbox" name="featured" value="1"> ⭐ Öne çıkan çok satan oyun
       </label>
+      <div class="form-group">
+        <label>İtemSatış / Bynogame / Harici Ödeme Linki</label>
+        <input id="editExternalUrl" name="external_buy_url" placeholder="https://www.itemsatis.com/ilanlar/...">
+      </div>
       <div class="form-group" style="margin-top:8px">
         <label>Yeni Oyun Dosyası Yükle (.zip) <span style="color:var(--muted);font-weight:400">(Boş bırakırsanız mevcut dosya kalır)</span></label>
         <input type="file" name="file" accept=".zip">
@@ -296,6 +300,7 @@ function openEditModal(game) {
   document.getElementById('editNode').value = game.node_version || '18';
   document.getElementById('editTag').value = game.tag || '';
   document.getElementById('editDesc').value = game.description || '';
+  document.getElementById('editExternalUrl').value = game.external_buy_url || '';
   document.getElementById('editFeatured').checked = !!game.featured;
   document.getElementById('editModal').style.display = 'flex';
 }

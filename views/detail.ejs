@@ -49,6 +49,10 @@
       </div>
 
       <!-- SATIN ALMA & SEPETE EKLEME BUTONLARI -->
+      <% if (game.external_buy_url) { %>
+        <a class="btn big success-btn" href="<%= game.external_buy_url %>" target="_blank" style="margin-bottom:14px;width:100%;padding:14px">🛍️ İtemSatış / Kredi Kartı İle Satın Al ➔</a>
+      <% } %>
+      
       <div class="buy-row">
         <form method="post" action="/sepet/ekle" style="display:flex;gap:12px;flex-wrap:wrap">
           <input type="hidden" name="game_id" value="<%= game.id %>">
