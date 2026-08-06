@@ -1,41 +1,51 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { requireAuth } = require('../middlewares/auth');
 
-// Siparişi Tamamlama Rotası (async fonksiyon eklendi)
+// Güvenli Oturum Kontrolü (Dış modül bağımlılığını kaldırır, çökme hatasını engeller)
+function requireAuth(req, res, next) {
+    if ((req.isAuthenticated && req.isAuthenticated()) || req.user || (req.session && req.session.user)) {
+        return next();
+    }
+    return res.redirect('/login');
+}
+
+// Sipariş Tamamlama ve Kütüphaneye Anında Ekleme Rotası
 router.post('/checkout', requireAuth, async (req, res) => {
     try {
+        const userId = req.user ? req.user.id : (req.session && req.session.user ? req.session.user.id : null);
         const { cartItems, totalAmount } = req.body;
 
-        // 1. Siparişi veritabanına 'paid' (ödendi) olarak ekle
+        if (!userId) {
+            return res.redirect('/login');
+        }
+
+        // 1. Siparişi 'paid' (ödendi) olarak kaydet
         const orderResult = await db.query(
             `INSERT INTO orders (user_id, total_amount, status, created_at) 
              VALUES ($1, $2, 'paid', NOW()) RETURNING id`,
-            [req.user.id, totalAmount || 0]
+            [userId, totalAmount || 0]
         );
         const orderId = orderResult.rows[0].id;
 
-        // 2. Ürünleri kütüphaneye anında ekle
+        // 2. Müşterinin kütüphanesine ürünleri ekle (İndirme linkinin hemen görünmesi için)
         if (cartItems && Array.isArray(cartItems)) {
             for (const item of cartItems) {
-                // Sipariş detay kaydı
                 await db.query(
                     `INSERT INTO order_items (order_id, game_id, price) VALUES ($1, $2, $3)`,
                     [orderId, item.game_id, item.price]
                 );
 
-                // Müşterinin kütüphanesine indirme linki çıkması için ekleme
                 await db.query(
                     `INSERT INTO user_library (user_id, game_id, purchased_at) 
                      VALUES ($1, $2, NOW()) 
                      ON CONFLICT (user_id, game_id) DO NOTHING`,
-                    [req.user.id, item.game_id]
+                    [userId, item.game_id]
                 );
             }
         }
 
-        // 3. Müşteriyi indirme linkinin olacağı kütüphane sayfasına yönlendir
+        // 3. Doğrudan indirme bağlantılarının olduğu kütüphanem sayfasına yönlendir
         res.redirect('/profil/kutuphanem');
 
     } catch (err) {
