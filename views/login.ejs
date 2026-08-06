@@ -1,12 +1,29 @@
 <%- include('partials/header') %>
-<section class="section narrow">
-  <h2>Giriş Yap</h2>
-  <% if (typeof error !== 'undefined' && error) { %><div class="alert"><%= error %></div><% } %>
-  <form method="post" action="/giris" class="form">
-    <input type="email" name="email" placeholder="E-posta" required>
-    <input type="password" name="password" placeholder="Şifre" required>
-    <button class="btn big">Giriş Yap</button>
-  </form>
-  <p class="note">Hesabın yok mu? <a href="/kayit">Kayıt ol</a></p>
-</section>
+
+<div class="auth-wrap">
+  <div class="auth-box">
+    <div class="auth-logo">⚡</div>
+    <h2>Tekrar hoş geldin</h2>
+    <p class="auth-sub">Hesabına giriş yap</p>
+
+    <% if (typeof error !== 'undefined' && error) { %>
+      <div class="alert"><%= error %></div>
+    <% } %>
+
+    <form method="post" action="/giris" class="form" id="loginForm">
+      <div class="form-group">
+        <label for="loginEmail">E-posta</label>
+        <input id="loginEmail" type="email" name="email" placeholder="ornek@mail.com" required autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label for="loginPass">Şifre</label>
+        <input id="loginPass" type="password" name="password" placeholder="••••••••" required autocomplete="current-password">
+      </div>
+      <button class="btn big" type="submit">Giriş Yap →</button>
+    </form>
+
+    <p class="auth-footer">Hesabın yok mu? <a href="/kayit">Kayıt ol</a></p>
+  </div>
+</div>
+
 <%- include('partials/footer') %>

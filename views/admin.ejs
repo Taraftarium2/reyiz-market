@@ -1,13 +1,17 @@
 <%- include('partials/header') %>
+
 <section class="section">
-  <h2>⚙ Admin Paneli</h2>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px">
+    <h2>⚙ Admin Paneli</h2>
+    <span class="badge badge-paid">🟢 Sistem Aktif</span>
+  </div>
 
   <!-- İstatistik Kartları -->
   <div class="stat-cards">
     <div class="stat-card">
       <div class="stat-icon">💰</div>
       <div class="stat-body">
-        <div class="stat-value">₺<%= Number(stats.totalRevenue).toLocaleString('tr-TR', {minimumFractionDigits:0}) %></div>
+        <div class="stat-value">₺<%= Number(stats.totalRevenue).toLocaleString('tr-TR',{minimumFractionDigits:0}) %></div>
         <div class="stat-label">Toplam Gelir</div>
       </div>
     </div>
@@ -19,7 +23,7 @@
       </div>
     </div>
     <div class="stat-card">
-      <div class="stat-icon">👤</div>
+      <div class="stat-icon">👥</div>
       <div class="stat-body">
         <div class="stat-value"><%= stats.totalUsers %></div>
         <div class="stat-label">Kayıtlı Kullanıcı</div>
@@ -35,91 +39,136 @@
   </div>
 
   <div class="admin-grid">
-    <!-- Oyun Ekle Formu -->
+    <!-- Sol: Oyun Ekle -->
     <div>
-      <h3>Oyun Ekle</h3>
-      <form method="post" action="/admin/oyun" enctype="multipart/form-data" class="form">
-        <input name="title" placeholder="Başlık" required>
-        <input name="slug" placeholder="slug (boş = otomatik)">
-        <input name="price" type="number" step="0.01" placeholder="Fiyat (₺)" required>
-        <input name="cover_image_url" placeholder="Kapak görsel URL">
-        <input name="node_version" placeholder="Node.js sürümü (örn 18)">
-        <input name="tag" placeholder="Kategori">
-        <textarea name="description" placeholder="Açıklama"></textarea>
-        <label><input type="checkbox" name="featured" value="1"> Öne çıkan</label>
-        <input type="file" name="file" accept=".zip">
-        <button class="btn">Ekle</button>
-      </form>
+      <div class="admin-panel-box">
+        <div class="panel-title">🎮 Oyun Ekle</div>
+        <form method="post" action="/admin/oyun" enctype="multipart/form-data" class="form">
+          <div class="form-group">
+            <label>Başlık *</label>
+            <input name="title" placeholder="Oyun adı" required>
+          </div>
+          <div class="form-group">
+            <label>Slug <span style="color:var(--faint);font-weight:400">(boş = otomatik)</span></label>
+            <input name="slug" placeholder="oyun-adi">
+          </div>
+          <div class="form-group">
+            <label>Fiyat (₺) *</label>
+            <input name="price" type="number" step="0.01" min="0" placeholder="149" required>
+          </div>
+          <div class="form-group">
+            <label>Kapak Görsel URL</label>
+            <input name="cover_image_url" placeholder="https://...">
+          </div>
+          <div class="form-group">
+            <label>Node.js Sürümü</label>
+            <input name="node_version" placeholder="18">
+          </div>
+          <div class="form-group">
+            <label>Kategori</label>
+            <input name="tag" placeholder="Örn: Quiz, Aksiyon...">
+          </div>
+          <div class="form-group">
+            <label>Açıklama</label>
+            <textarea name="description" placeholder="Oyun hakkında kısa açıklama"></textarea>
+          </div>
+          <label><input type="checkbox" name="featured" value="1"> ⭐ Öne çıkan oyun</label>
+          <div class="form-group">
+            <label>Oyun Dosyası (.zip)</label>
+            <input type="file" name="file" accept=".zip">
+          </div>
+          <button class="btn" type="submit">+ Oyun Ekle</button>
+        </form>
+      </div>
     </div>
 
-    <!-- Oyunlar + Siparişler -->
-    <div>
-      <h3>Oyunlar (<%= games.length %>)</h3>
-      <table class="tbl">
-        <tr><th>Başlık</th><th>Fiyat</th><th>Kategori</th><th></th></tr>
-        <% games.forEach(function (g) { %>
-        <tr>
-          <td><%= g.title %></td>
-          <td>₺<%= Number(g.price).toFixed(0) %></td>
-          <td><%= g.tag %></td>
-          <td>
-            <form method="post" action="/admin/oyun/<%= g.id %>/sil" style="display:inline">
-              <button class="btn ghost sm">Sil</button>
-            </form>
-          </td>
-        </tr>
-        <% }) %>
-      </table>
+    <!-- Sağ: Oyunlar + Siparişler -->
+    <div style="display:flex;flex-direction:column;gap:22px">
 
-      <h3 style="margin-top:28px">
-        Siparişler
-        <% var pendingOrders = orders.filter(function(o){return o.status==='pending';}); %>
-        <% if (pendingOrders.length > 0) { %>
-          <span class="badge badge-pending" style="font-size:.8rem;margin-left:8px"><%= pendingOrders.length %> bekleyen</span>
+      <!-- Oyunlar Tablosu -->
+      <div class="admin-panel-box">
+        <div class="panel-title">🎮 Oyunlar <span style="color:var(--muted);font-weight:400;font-size:.85rem">(<%= games.length %> oyun)</span></div>
+        <% if (!games.length) { %>
+          <p class="muted" style="padding:12px 0">Henüz oyun eklenmedi.</p>
+        <% } else { %>
+        <div style="overflow-x:auto">
+          <table class="tbl">
+            <thead><tr><th>Başlık</th><th>Fiyat</th><th>Kategori</th><th>Öne Çıkan</th><th></th></tr></thead>
+            <tbody>
+              <% games.forEach(function (g) { %>
+              <tr>
+                <td><strong><%= g.title %></strong></td>
+                <td style="color:var(--orange2);font-weight:700">₺<%= Number(g.price).toFixed(0) %></td>
+                <td><span class="badge"><%= g.tag %></span></td>
+                <td><%= g.featured ? '⭐' : '—' %></td>
+                <td>
+                  <form method="post" action="/admin/oyun/<%= g.id %>/sil" style="display:inline" onsubmit="return confirm('<%= g.title %> silinecek. Emin misin?')">
+                    <button class="btn ghost sm" style="color:var(--muted)">🗑 Sil</button>
+                  </form>
+                </td>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
         <% } %>
-      </h3>
-      <table class="tbl">
-        <tr><th>#</th><th>Kullanıcı</th><th>Oyunlar</th><th>Tutar</th><th>Tarih</th><th>Durum</th><th>İşlem</th></tr>
-        <% orders.forEach(function (o) { %>
-        <tr class="<%= o.status === 'pending' ? 'tr-pending' : '' %>">
-          <td><code><%= o.payment_ref || o.id %></code></td>
-          <td>
-            <div class="td-user">
-              <span><%= o.email %></span>
-            </div>
-          </td>
-          <td class="td-games">
-            <% if (o.items && o.items[0] && o.items[0].title) { %>
-              <% o.items.forEach(function(item){ %><span class="order-game-tag sm"><%= item.title %></span><% }); %>
-            <% } %>
-          </td>
-          <td><strong>₺<%= Number(o.total_amount).toFixed(0) %></strong></td>
-          <td class="muted td-date"><%= new Date(o.created_at).toLocaleDateString('tr-TR', {day:'2-digit', month:'2-digit', year:'numeric'}) %></td>
-          <td>
-            <% if (o.status === 'paid') { %>
-              <span class="badge badge-paid">✓ Onaylandı</span>
-            <% } else if (o.status === 'pending') { %>
-              <span class="badge badge-pending">⏳ Bekliyor</span>
-            <% } else if (o.status === 'cancelled') { %>
-              <span class="badge badge-cancelled">✕ İptal</span>
-            <% } else { %>
-              <span class="badge"><%= o.status %></span>
-            <% } %>
-          </td>
-          <td class="td-actions">
-            <% if (o.status === 'pending') { %>
-              <form method="post" action="/admin/siparis/<%= o.id %>/onayla" style="display:inline">
-                <button class="btn sm btn-approve" onclick="return confirm('Bu siparişi onaylıyor musun? Kullanıcı kütüphanesine eklenecek.')">✓ Onayla</button>
-              </form>
-              <form method="post" action="/admin/siparis/<%= o.id %>/iptal" style="display:inline">
-                <button class="btn ghost sm btn-cancel" onclick="return confirm('Bu siparişi iptal etmek istediğine emin misin?')">✕ İptal</button>
-              </form>
-            <% } %>
-          </td>
-        </tr>
-        <% }) %>
-      </table>
-    </div>
-  </div>
+      </div>
+
+      <!-- Siparişler Tablosu -->
+      <div class="admin-panel-box">
+        <div class="panel-title">
+          📋 Siparişler
+          <% var pendingOrders = orders.filter(function(o){return o.status==='pending';}); %>
+          <% if (pendingOrders.length > 0) { %>
+            <span class="badge badge-pending" style="margin-left:8px"><%= pendingOrders.length %> bekleyen</span>
+          <% } %>
+        </div>
+        <% if (!orders.length) { %>
+          <p class="muted" style="padding:12px 0">Henüz sipariş yok.</p>
+        <% } else { %>
+        <div style="overflow-x:auto">
+          <table class="tbl">
+            <thead><tr><th>Kod</th><th>Kullanıcı</th><th>Oyunlar</th><th>Tutar</th><th>Tarih</th><th>Durum</th><th>İşlem</th></tr></thead>
+            <tbody>
+              <% orders.forEach(function (o) { %>
+              <tr class="<%= o.status === 'pending' ? 'tr-pending' : '' %>">
+                <td><code style="font-size:.78rem;color:var(--muted)"><%= o.payment_ref || ('#'+o.id) %></code></td>
+                <td style="font-size:.85rem"><%= o.email %></td>
+                <td class="td-games">
+                  <% if (o.items && o.items[0] && o.items[0].title) { %>
+                    <% o.items.forEach(function(item){ %><span class="order-game-tag sm"><%= item.title %></span> <% }); %>
+                  <% } %>
+                </td>
+                <td><strong style="color:var(--orange2)">₺<%= Number(o.total_amount).toFixed(0) %></strong></td>
+                <td class="td-date"><%= new Date(o.created_at).toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric'}) %></td>
+                <td>
+                  <% if (o.status==='paid') { %><span class="badge badge-paid">✓ Onaylandı</span>
+                  <% } else if (o.status==='pending') { %><span class="badge badge-pending">⏳ Bekliyor</span>
+                  <% } else if (o.status==='cancelled') { %><span class="badge badge-cancelled">✕ İptal</span>
+                  <% } %>
+                </td>
+                <td>
+                  <div class="td-actions">
+                    <% if (o.status==='pending') { %>
+                      <form method="post" action="/admin/siparis/<%= o.id %>/onayla" onsubmit="return confirm('Bu siparişi onaylıyor musun? Kullanıcı kütüphanesine eklenecek.')">
+                        <button class="btn sm btn-approve">✓ Onayla</button>
+                      </form>
+                      <form method="post" action="/admin/siparis/<%= o.id %>/iptal" onsubmit="return confirm('Bu siparişi iptal etmek istediğine emin misin?')">
+                        <button class="btn ghost sm btn-cancel">✕</button>
+                      </form>
+                    <% } %>
+                  </div>
+                </td>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+        <% } %>
+      </div>
+
+    </div><!-- /sağ -->
+  </div><!-- /admin-grid -->
 </section>
+
 <%- include('partials/footer') %>

@@ -1,30 +1,39 @@
 <%- include('partials/header') %>
+
 <section class="section">
-  <div class="sec-head">
-    <h2>Kütüphanem</h2>
-    <span class="count"><%= games.length %> oyun</span>
+  <div class="section-title" style="text-align:left;margin-bottom:28px">
+    <h2>📚 Kütüphanem</h2>
+    <p>Satın aldığın oyunlar — dilediğin zaman indir</p>
   </div>
   <% if (!games.length) { %>
-    <div class="empty"><p>Henüz oyun satın almadın.</p><a class="btn" href="/oyunlar">Mağazaya Git</a></div>
+    <div class="empty">
+      Henüz oyun satın almadın.<br>
+      <a href="/oyunlar" style="margin-top:8px;display:inline-block">🎮 Mağazaya git →</a>
+    </div>
   <% } else { %>
-    <div class="grid">
+    <div class="lib-grid">
       <% games.forEach(function (g) { %>
-        <article class="card">
-          <div class="cover" style="background:<%= g.cover_image_url || 'linear-gradient(135deg,#8b5cf6,#f97316)' %>">
-            <% if (g.cover_image_url) { %><img src="<%= g.cover_image_url %>" alt=""><% } %>
-            <span class="tag"><%= g.tag %></span>
+        <div class="lib-card">
+          <div class="lib-cover">
+            <% if (g.cover_image_url) { %>
+              <img src="<%= g.cover_image_url %>" alt="<%= g.title %>">
+            <% } else { %>
+              <div class="lib-cover-placeholder">🎮</div>
+            <% } %>
           </div>
-          <div class="card-body">
+          <div class="lib-body">
             <h3><%= g.title %></h3>
-            <p class="muted">İndirme: <%= g.download_count %> · <%- new Date(g.purchased_at).toLocaleDateString('tr-TR') %></p>
-            <a class="btn" href="<%= g.downloadUrl %>">⬇ İndir (.zip)</a>
-            <div class="hint">
-              <b>Kurulum:</b> zip'i aç → klasörde <code>npm install</code> → <code>npm start</code> → oyunun kendi adresini aç. Detaylar zip içindeki <b>README.md</b>'de.
-            </div>
+            <p class="lib-meta">
+              📥 <%= g.download_count %> indirme &nbsp;·&nbsp;
+              <%= new Date(g.purchased_at).toLocaleDateString('tr-TR') %>
+            </p>
+            <a class="btn lib-dl" href="<%= g.downloadUrl %>">⬇ İndir (.zip)</a>
+            <p class="note" style="margin-top:8px">🔗 Bağlantı 10 dk geçerlidir. Yeniden alabilirsin.</p>
           </div>
-        </article>
+        </div>
       <% }) %>
     </div>
   <% } %>
 </section>
+
 <%- include('partials/footer') %>

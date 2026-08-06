@@ -1,19 +1,41 @@
 <%- include('partials/header') %>
-<section class="section narrow">
-  <h2>Ödeme</h2>
-  <% if (typeof error !== 'undefined' && error) { %><div class="alert"><%= error %></div><% } %>
-  <div class="cartlist">
-    <% items.forEach(function (g) { %>
-      <div class="cartrow"><span><b><%= g.title %></b></span><span>₺<%= Number(g.price).toFixed(0) %></span></div>
-    <% }) %>
+
+<section class="section">
+  <div style="max-width:640px">
+    <h2 style="margin-bottom:6px">💳 Ödeme</h2>
+    <p class="muted" style="margin-bottom:24px">Sipariş oluşturulacak, banka bilgileri gösterilecek.</p>
+
+    <% if (typeof error !== 'undefined' && error) { %>
+      <div class="alert"><%= error %></div>
+    <% } %>
+
+    <% if (!items.length) { %>
+      <div class="empty">Sepetin boş. <a href="/oyunlar">Oyunlara git →</a></div>
+    <% } else { %>
+      <div class="cartlist" style="margin-bottom:14px">
+        <% items.forEach(function (g) { %>
+          <div class="cartrow">
+            <span class="cartrow-name"><%= g.title %></span>
+            <span class="price" style="font-size:1rem">₺<%= Number(g.price).toFixed(0) %></span>
+          </div>
+        <% }) %>
+      </div>
+      <div class="total-row-wrap" style="margin-bottom:22px">
+        <span class="total-label">Toplam Tutar</span>
+        <span class="total-val">₺<%= total.toFixed(0) %></span>
+      </div>
+
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;margin-bottom:20px">
+        <p style="font-size:.85rem;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">ℹ️ Ödeme Süreci</p>
+        <p style="font-size:.9rem;color:var(--muted);line-height:1.6">Sipariş oluşturduktan sonra banka/IBAN bilgisi ekrana gelecek. <strong style="color:var(--text)">Havale/EFT</strong> yaptıktan sonra admin onaylayacak ve oyunlar kütüphanene eklenecek.</p>
+      </div>
+
+      <form method="post" action="/odeme" class="form">
+        <button class="btn big" type="submit">Siparişi Oluştur ve Ödeme Bilgisini Gör →</button>
+      </form>
+      <p class="note" style="margin-top:12px">🔒 Ödeme bilgileri bir sonraki sayfada gösterilecektir.</p>
+    <% } %>
   </div>
-  <div class="total">Toplam: <b>₺<%= total.toFixed(0) %></b></div>
-  <form method="post" action="/odeme" class="form">
-    <input name="name" placeholder="Ad" required>
-    <input name="surname" placeholder="Soyad" required>
-    <input name="phone" placeholder="Telefon" required>
-    <button class="btn big" type="submit">Ödemeyi Tamamla</button>
-  </form>
-  <p class="note">Ödeme güvenli şekilde işlenir. Dosyalar yalnızca ödeme onayından sonra hesabına tanımlanır.</p>
 </section>
+
 <%- include('partials/footer') %>

@@ -1,16 +1,21 @@
 <%- include('partials/header') %>
-<section class="section narrow">
+
+<div class="pending-wrap">
   <div class="pending-box">
     <div class="pending-icon">⏳</div>
-    <h2>Ödemen Bekleniyor</h2>
-    <p class="muted">Aşağıdaki banka hesabına havale / EFT yaparak siparişini tamamla. Ödeme onaylandıktan sonra oyunlar kütüphanene eklenecek.</p>
+    <h2>Ödeme Bekleniyor</h2>
+    <p class="pending-sub">Aşağıdaki banka hesabına havale / EFT yap. Ödeme onaylandıktan sonra oyunlar kütüphanene eklenir.</p>
 
-    <div class="order-ref-box">
-      <span class="ref-label">Açıklama / Sipariş Kodu</span>
-      <div class="ref-value" id="refCode"><%= order.payment_ref %></div>
-      <button class="btn-copy" onclick="copyRef()" id="copyBtn" title="Kopyala">📋 Kopyala</button>
+    <!-- Sipariş Kodu -->
+    <div class="ref-box">
+      <div class="ref-label">📋 Açıklama / Sipariş Kodu — Havaleye mutlaka yaz!</div>
+      <div class="ref-row">
+        <div class="ref-value" id="refCode"><%= order.payment_ref %></div>
+        <button class="btn-copy" onclick="copyRef()" id="copyBtn">📋 Kopyala</button>
+      </div>
     </div>
 
+    <!-- IBAN Bilgisi -->
     <% if (iban) { %>
     <div class="iban-box">
       <div class="iban-row">
@@ -23,20 +28,23 @@
       </div>
       <div class="iban-row">
         <span class="iban-label">IBAN</span>
-        <span class="iban-val iban-num" id="ibanNum"><%= iban %></span>
-        <button class="btn-copy-sm" onclick="copyIban()" title="IBAN kopyala">📋</button>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="iban-val iban-num" id="ibanNum"><%= iban %></span>
+          <button class="btn-copy-sm" onclick="copyIban()" title="IBAN kopyala">📋</button>
+        </div>
       </div>
       <div class="iban-row">
         <span class="iban-label">Tutar</span>
-        <span class="iban-val price">₺<%= Number(order.total_amount).toFixed(2) %></span>
+        <span class="iban-val" style="color:var(--orange2);font-size:1.1rem;font-weight:800">₺<%= Number(order.total_amount).toFixed(2) %></span>
       </div>
     </div>
     <% } else { %>
-    <div class="alert" style="margin:18px 0">Banka bilgileri henüz ayarlanmamış. Lütfen admin ile iletişime geç.</div>
+    <div class="alert" style="margin-bottom:18px">Banka bilgileri ayarlanmamış. Admin ile iletişime geç.</div>
     <% } %>
 
+    <!-- Sipariş İçeriği -->
     <div class="order-items-list">
-      <h4>Sipariş İçeriği</h4>
+      <div class="oil-header">Sipariş İçeriği</div>
       <% items.forEach(function(item) { %>
       <div class="order-item-row">
         <span><%= item.title %></span>
@@ -44,11 +52,12 @@
       </div>
       <% }) %>
       <div class="order-item-row total-row">
-        <span><strong>Toplam</strong></span>
-        <span class="price"><strong>₺<%= Number(order.total_amount).toFixed(2) %></strong></span>
+        <span>Toplam</span>
+        <span class="price-sm" style="font-size:1rem">₺<%= Number(order.total_amount).toFixed(2) %></span>
       </div>
     </div>
 
+    <!-- Adım Göstergesi -->
     <div class="pending-steps">
       <div class="pstep done">✓ Sipariş oluşturuldu</div>
       <div class="pstep active">⏳ Havale bekleniyor</div>
@@ -60,25 +69,29 @@
       <a class="btn" href="/profil/kutuphanem">Kütüphanem</a>
     </div>
 
-    <p class="note" style="margin-top:20px">⚠️ Havale açıklamasına mutlaka sipariş kodunu (<strong><%= order.payment_ref %></strong>) yaz. Aksi hâlde ödemen eşleştirilemez.</p>
+    <p class="note" style="margin-top:16px;text-align:center">
+      ⚠️ Havale açıklamasına mutlaka <strong><%= order.payment_ref %></strong> yaz.<br>
+      Aksi hâlde ödemen eşleştirilemez.
+    </p>
   </div>
-</section>
+</div>
 
 <script>
 function copyRef() {
-  const code = document.getElementById('refCode').textContent.trim();
-  navigator.clipboard.writeText(code).then(() => {
-    const btn = document.getElementById('copyBtn');
-    btn.textContent = '✅ Kopyalandı';
-    setTimeout(() => btn.textContent = '📋 Kopyala', 2000);
+  navigator.clipboard.writeText('<%= order.payment_ref %>').then(function() {
+    var btn = document.getElementById('copyBtn');
+    btn.textContent = '✅ Kopyalandı!';
+    btn.style.borderColor = 'var(--green)';
+    btn.style.color = 'var(--green)';
+    setTimeout(function() { btn.textContent = '📋 Kopyala'; btn.style.borderColor = ''; btn.style.color = ''; }, 2500);
   });
 }
 function copyIban() {
-  const iban = document.getElementById('ibanNum').textContent.trim();
-  navigator.clipboard.writeText(iban).then(() => {
-    const btns = document.querySelectorAll('.btn-copy-sm');
-    btns.forEach(b => { b.textContent = '✅'; setTimeout(() => b.textContent = '📋', 2000); });
+  navigator.clipboard.writeText('<%= iban %>').then(function() {
+    var btns = document.querySelectorAll('.btn-copy-sm');
+    btns.forEach(function(b) { b.textContent = '✅'; setTimeout(function() { b.textContent = '📋'; }, 2000); });
   });
 }
 </script>
+
 <%- include('partials/footer') %>

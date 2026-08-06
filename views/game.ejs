@@ -1,25 +1,54 @@
 <%- include('partials/header') %>
-<section class="detail">
-  <div class="cover big" style="background:<%= game.cover_image_url || 'linear-gradient(135deg,#8b5cf6,#f97316)' %>">
-    <% if (game.cover_image_url) { %><img src="<%= game.cover_image_url %>" alt=""><% } %>
-    <span class="tag"><%= game.tag %></span>
-  </div>
-  <div class="detail-body">
-    <h1><%= game.title %></h1>
-    <p class="desc"><%= game.description %></p>
-    <div class="reqs">
-      <p>🟣 <b>Node.js:</b> v<%= game.node_version || '18' %>+</p>
-      <p>📺 <b>Tür:</b> TikTok LIVE uyumlu · dijital indirme</p>
-      <p>⚡ <b>Teslimat:</b> Anında, Kütüphanem üzerinden</p>
+
+<section class="section">
+  <div class="filters-bar">
+    <input class="search-input" id="searchInput" type="text" placeholder="🔍  Oyun ara...">
+    <div class="tags" id="tagFilters">
+      <button class="chip active" data-tag="">Tümü</button>
+      <% const tags = [...new Set(games.map(function(g){return g.tag;}).filter(Boolean))];
+         tags.forEach(function(t) { %>
+        <button class="chip" data-tag="<%= t %>"><%= t %></button>
+      <% }); %>
     </div>
-    <div class="buyrow">
-      <span class="price big">₺<%= Number(game.price).toFixed(0) %></span>
-      <form method="post" action="/sepet/ekle">
-        <input type="hidden" name="game_id" value="<%= game.id %>">
-        <button class="btn big">Sepete Ekle</button>
-      </form>
-    </div>
-    <div class="mini-steps"><p>🛒 Sepete ekle → 💳 Öde → ⬇️ Kütüphanem'den indir</p></div>
   </div>
+
+  <div class="grid" id="gamesGrid">
+    <% games.forEach(function (g) { %><%- include('partials/gamecard', { game: g }) %><% }) %>
+  </div>
+  <p class="empty" id="noResults" style="display:none">Sonuç bulunamadı.</p>
 </section>
+
+<script>
+(function() {
+  const input = document.getElementById('searchInput');
+  const chips = document.querySelectorAll('#tagFilters .chip');
+  const cards = document.querySelectorAll('#gamesGrid article');
+  const noRes = document.getElementById('noResults');
+  let activeTag = '';
+
+  function filter() {
+    const q = input.value.toLowerCase();
+    let visible = 0;
+    cards.forEach(function(c) {
+      const title = (c.dataset.title || '').toLowerCase();
+      const tag   = c.dataset.tag || '';
+      const show  = title.includes(q) && (activeTag === '' || tag === activeTag);
+      c.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+    noRes.style.display = visible === 0 ? '' : 'none';
+  }
+
+  input.addEventListener('input', filter);
+  chips.forEach(function(chip) {
+    chip.addEventListener('click', function() {
+      chips.forEach(function(c) { c.classList.remove('active'); });
+      chip.classList.add('active');
+      activeTag = chip.dataset.tag;
+      filter();
+    });
+  });
+})();
+</script>
+
 <%- include('partials/footer') %>
