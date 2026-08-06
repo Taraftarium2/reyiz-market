@@ -25,7 +25,11 @@
     <p>En çok tercih edilen interaktif LIVE oyunları</p>
   </div>
   <div class="grid">
-    <% featured.forEach(function (g) { %><%- include('partials/gamecard', { game: g }) %><% }) %>
+    <% if (typeof featured !== 'undefined' && featured && featured.length > 0) { %>
+      <% featured.forEach(function (g) { %><%- include('partials/gamecard', { game: g }) %><% }) %>
+    <% } else { %>
+      <div class="empty" style="grid-column: 1 / -1;">Henüz oyun eklenmedi. Admin panelinden ilk oyunu ekleyin.</div>
+    <% } %>
   </div>
   <div class="center"><a class="btn ghost" href="/oyunlar">Tüm Oyunları Gör →</a></div>
 </section>
