@@ -1,0 +1,77 @@
+<%- include('partials/header') %>
+
+<section class="section">
+  <!-- Breadcrumb -->
+  <div style="font-size:.85rem;color:var(--muted);margin-bottom:24px;display:flex;gap:8px;align-items:center">
+    <a href="/">Ana Sayfa</a> / <a href="/oyunlar">Oyunlar</a> / <span style="color:var(--text)"><%= game.title %></span>
+  </div>
+
+  <div class="detail-grid">
+    <!-- Sol Kolon: Görsel & Rozetler -->
+    <div>
+      <div class="detail-cover">
+        <% if (game.cover_image_url) { %>
+          <img src="<%= game.cover_image_url %>" alt="<%= game.title %>">
+        <% } else { %>
+          <div class="detail-cover-placeholder">🎮</div>
+        <% } %>
+      </div>
+      
+      <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
+        <span class="badge badge-paid" style="padding:6px 14px">✓ Virüssüz & Temiz Kod</span>
+        <span class="badge" style="padding:6px 14px">⚡ Node <%= game.node_version || '18+' %> Uyumlu</span>
+        <span class="badge" style="padding:6px 14px">🎥 OBS & TikTok Studio</span>
+      </div>
+    </div>
+
+    <!-- Sağ Kolon: Başlık, Fiyat, Satın Alma & Açıklama -->
+    <div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <span class="tag-chip" style="position:static"><%= game.tag || 'Mini Oyun' %></span>
+        <% if (game.featured) { %><span class="featured-chip" style="position:static">🔥 Çok Satan</span><% } %>
+        <div class="rating-stars" style="font-size:1rem">★★★★★ <span class="rating-count">(4.9 / 5)</span></div>
+      </div>
+
+      <h1 style="font-size:2.2rem;font-weight:900;margin-bottom:12px;letter-spacing:-.02em"><%= game.title %></h1>
+      
+      <div style="margin-bottom:20px">
+        <span class="price big">₺<%= Number(game.price).toFixed(0) %></span>
+        <span style="color:var(--muted);font-size:.85rem;margin-left:10px">· Tek Seferlik Ödeme (Süresiz Lisans)</span>
+      </div>
+
+      <p class="detail-desc"><%= game.description || 'Bu interaktif oyun canlı yayınlarında chat etkileşimini ve hediye katılımını artırmak için Node.js ortamında çalışır.' %></p>
+
+      <!-- Gereksinimler & Özellikler -->
+      <div class="detail-reqs">
+        <div class="req-item"><span>🚀 Çalışma Ortamı:</span> Node.js <%= game.node_version || '18+' %></div>
+        <div class="req-item"><span>📡 Entegrasyon:</span> TikTok Live WebSocket Chat / Hediye</div>
+        <div class="req-item"><span>📥 Teslimat:</span> Otomatik Kütüphanem İndirmesi (.zip)</div>
+      </div>
+
+      <!-- SATIN ALMA & SEPETE EKLEME BUTONLARI -->
+      <div class="buy-row">
+        <form method="post" action="/sepet/ekle" style="display:flex;gap:12px;flex-wrap:wrap">
+          <input type="hidden" name="game_id" value="<%= game.id %>">
+          <button class="btn big" type="submit" style="padding:14px 28px">🛒 Sepete Ekle</button>
+        </form>
+        <a class="btn big ghost" href="/rehber">📖 Kurulum Rehberi</a>
+      </div>
+
+      <p class="note" style="margin-top:16px">
+        🔒 Ödeme havale/EFT ile yapılır. Admin onayladığı an oyun otomatik olarak <strong>Kütüphanem</strong> sayfanıza tanımlanır ve .zip dosyası indirilebilir hale gelir.
+      </p>
+    </div>
+  </div>
+
+  <!-- BENZER OYUNLAR -->
+  <% if (typeof related !== 'undefined' && related && related.length > 0) { %>
+  <div style="margin-top:64px;padding-top:40px;border-top:1px solid var(--border)">
+    <h3 style="font-size:1.4rem;font-weight:800;margin-bottom:20px">🎮 Benzer İnteraktif Oyunlar</h3>
+    <div class="grid">
+      <% related.forEach(function (g) { %><%- include('partials/gamecard', { game: g }) %><% }) %>
+    </div>
+  </div>
+  <% } %>
+</section>
+
+<%- include('partials/footer') %>

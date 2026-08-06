@@ -57,6 +57,17 @@
       </div>
     </div>
 
+    <!-- Ödemeyi Yaptım Butonu / Bildirimi -->
+    <% if (order.payment_provider === 'manual_notified') { %>
+      <div class="alert alert-success" style="text-align:center;margin-bottom:16px;font-weight:600">
+        ⚡ Havale yaptığınız bildirildi. Admin kontrol edip kısa sürede onaylayacaktır.
+      </div>
+    <% } else { %>
+      <form method="post" action="/odeme/beklemede/<%= order.id %>/bildir" style="margin-bottom:18px;text-align:center">
+        <button class="btn big success-btn" type="submit" style="width:100%;padding:14px">⚡ Havaleyi Yaptım (Admine Bildir)</button>
+      </form>
+    <% } %>
+
     <!-- Adım Göstergesi -->
     <div class="pending-steps">
       <div class="pstep done">✓ Sipariş oluşturuldu</div>
