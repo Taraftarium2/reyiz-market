@@ -3,10 +3,10 @@ const db = require('../db');
 const { requireAuth } = require('../auth');
 
 function readCart(req) { try { return JSON.parse(req.cookies.cart || '[]'); } catch (e) { return []; } }
-function writeCart(res, ids) { res.cookie('cart', JSON.stringify(ids), { maxAge: 7 * 24 * 3600 * 1000 }); }
+function writeCart(res, ids) { res.cookie('cart', JSON.stringify(ids), { maxAge: 7 * 24 * 3600 * 1000, httpOnly: true }); }
 
 function readCoupon(req) { try { return JSON.parse(req.cookies.coupon || 'null'); } catch (e) { return null; } }
-function writeCoupon(res, coupon) { res.cookie('coupon', JSON.stringify(coupon), { maxAge: 7 * 24 * 3600 * 1000 }); }
+function writeCoupon(res, coupon) { res.cookie('coupon', JSON.stringify(coupon), { maxAge: 7 * 24 * 3600 * 1000, httpOnly: true }); }
 function clearCoupon(res) { res.clearCookie('coupon'); }
 
 function calculateCartTotals(items, coupon) {
@@ -63,6 +63,7 @@ router.post('/sepet/kupon', async (req, res) => {
     writeCoupon(res, { code: coupon.code, discount_percent: coupon.discount_percent, discount_amount: coupon.discount_amount });
     res.redirect('/sepet');
   } catch (e) {
+    console.error('Kupon sorgu hatası:', e.message);
     res.redirect('/sepet');
   }
 });
@@ -97,6 +98,10 @@ router.post('/odeme', requireAuth, async (req, res) => {
   if (!ids.length) return res.redirect('/sepet');
   const coupon = readCoupon(req);
   const games = (await db.query('SELECT * FROM games WHERE id = ANY($1)', [ids])).rows;
+  if (!games.length) {
+    writeCart(res, []);
+    return res.redirect('/sepet');
+  }
   const { subtotal, discount, total } = calculateCartTotals(games, coupon);
   const mode = process.env.PAYMENT_MODE || 'manual';
 
@@ -106,8 +111,15 @@ router.post('/odeme', requireAuth, async (req, res) => {
   if (giftEmail && giftEmail.includes('@')) {
     try {
       const uRes = await db.query('SELECT id FROM users WHERE LOWER(email)=$1', [giftEmail]);
-      if (uRes.rows[0]) targetUserId = uRes.rows[0].id;
-    } catch(e) {}
+      if (uRes.rows[0]) {
+        targetUserId = uRes.rows[0].id;
+        console.log(`🎁 Hediye sipariş: ${req.user.email} -> ${giftEmail} (user_id ${targetUserId})`);
+      } else {
+        console.warn(`⚠️ Hediye e-posta bulunamadı, sipariş sahibine atanıyor: ${giftEmail}`);
+      }
+    } catch(e) {
+      console.error('Hediye kullanıcı sorgu hatası:', e.message);
+    }
   }
 
   if (mode === 'iyzico') {
@@ -117,15 +129,29 @@ router.post('/odeme', requireAuth, async (req, res) => {
   }
 
   if (mode === 'mock') {
-    await finalizeOrder(targetUserId, games, total, 'mock', 'mock_' + Date.now());
+    // Anında onay - kütüphaneye ekle
+    try {
+      await finalizeOrder(targetUserId, games, total, 'mock', 'mock_' + Date.now(), coupon);
+      console.log(`✅ MOCK ödeme tamamlandı, ${games.length} oyun user ${targetUserId} kütüphanesine eklendi`);
+    } catch(e) {
+      console.error('❌ finalizeOrder (mock) hatası:', e);
+      return res.status(500).render('error', { message: 'Sipariş oluşturulamadı: ' + e.message, status: 500 });
+    }
     writeCart(res, []);
     clearCoupon(res);
     return res.redirect('/odeme/basarili');
   }
 
-  // manual modu (varsayılan)
+  // manual modu (varsayılan) -> pending order, admin onayı gerekli
   const ref = 'RM-' + Date.now().toString(36).toUpperCase();
-  const orderId = await createPendingOrder(targetUserId, games, total, 'manual', ref);
+  let orderId;
+  try {
+    orderId = await createPendingOrder(targetUserId, games, total, 'manual', ref, coupon);
+    console.log(`⏳ Manuel sipariş oluşturuldu #${orderId} (user ${targetUserId}, tutar ₺${total}, ref ${ref}) - admin onayı bekleniyor`);
+  } catch(e) {
+    console.error('❌ createPendingOrder hatası:', e);
+    return res.status(500).render('error', { message: 'Sipariş oluşturulamadı: ' + e.message, status: 500 });
+  }
   writeCart(res, []);
   clearCoupon(res);
   res.redirect('/odeme/beklemede/' + orderId);
@@ -135,11 +161,20 @@ router.post('/odeme', requireAuth, async (req, res) => {
 router.get('/odeme/beklemede/:id', requireAuth, async (req, res) => {
   res.locals.title = 'Ödeme Bekleniyor';
   const orderId = Number(req.params.id);
-  const o = (await db.query(
-    `SELECT o.*, u.email FROM orders o JOIN users u ON u.id = o.user_id WHERE o.id = $1 AND o.user_id = $2`,
-    [orderId, req.user.id]
-  )).rows[0];
+  
+  // Kullanıcı kendi siparişini veya admin herhangi bir siparişi görebilir
+  let o;
+  if (req.user.role === 'admin') {
+    o = (await db.query(`SELECT o.*, u.email FROM orders o JOIN users u ON u.id = o.user_id WHERE o.id = $1`, [orderId])).rows[0];
+  } else {
+    o = (await db.query(`SELECT o.*, u.email FROM orders o JOIN users u ON u.id = o.user_id WHERE o.id = $1 AND o.user_id = $2`, [orderId, req.user.id])).rows[0];
+  }
   if (!o) return res.redirect('/siparislerim');
+
+  // Eğer sipariş zaten paid ise direkt kütüphaneye yönlendir (tekrar ödeme ekranı gösterme)
+  if (o.status === 'paid') {
+    return res.redirect('/profil/kutuphanem');
+  }
 
   const items = (await db.query(
     `SELECT g.title, oi.price_at_purchase FROM order_items oi JOIN games g ON g.id = oi.game_id WHERE oi.order_id = $1`,
@@ -156,20 +191,46 @@ router.get('/odeme/beklemede/:id', requireAuth, async (req, res) => {
   });
 });
 
-// Ödemeyi Yaptım Bildirimi (Admin Bildir)
+// Ödemeyi Yaptım Bildirimi (Admin Bildir) - manual_notified yap
 router.post('/odeme/beklemede/:id/bildir', requireAuth, async (req, res) => {
   const orderId = Number(req.params.id);
   try {
-    await db.query(`UPDATE orders SET payment_provider='manual_notified' WHERE id=$1 AND user_id=$2 AND status='pending'`, [orderId, req.user.id]);
+    // Sadece kendi pending siparişini bildirebilir (admin istisna)
+    const cond = req.user.role === 'admin' ? '' : ' AND user_id=$2 AND status=\'pending\'';
+    const params = req.user.role === 'admin' ? [orderId] : [orderId, req.user.id];
+    const q = req.user.role === 'admin'
+      ? `UPDATE orders SET payment_provider='manual_notified' WHERE id=$1 AND status='pending'`
+      : `UPDATE orders SET payment_provider='manual_notified' WHERE id=$1 AND user_id=$2 AND status='pending'`;
+    const r = await db.query(q, params);
+    if (r.rowCount) console.log(`📢 Sipariş #${orderId} için ödeme bildirildi (user ${req.user.email})`);
   } catch (e) {
-    console.error('Ödeme bildirim hatası:', e);
+    console.error('Ödeme bildirim hatası:', e.message);
   }
   res.redirect('/odeme/beklemede/' + orderId);
 });
 
-// Admin / Test Hızlı Sipariş Onaylama Endpoint'i
+// Hızlı Sipariş Onaylama (Admin veya kendi siparişini test amaçlı onaylama)
+// Güvenlik: sadece sipariş sahibi veya admin onaylayabilir
 router.post('/odeme/beklemede/:id/hizli-onay', requireAuth, async (req, res) => {
   const orderId = Number(req.params.id);
+  
+  // Yetki kontrolü: sipariş sahibi mi admin mi?
+  let orderCheck;
+  if (req.user.role === 'admin') {
+    orderCheck = (await db.query(`SELECT id, user_id, status FROM orders WHERE id=$1`, [orderId])).rows[0];
+  } else {
+    orderCheck = (await db.query(`SELECT id, user_id, status FROM orders WHERE id=$1 AND user_id=$2`, [orderId, req.user.id])).rows[0];
+  }
+  if (!orderCheck) {
+    return res.status(403).render('error', { message: 'Bu siparişi onaylama yetkiniz yok.', status: 403 });
+  }
+  if (orderCheck.status === 'paid') {
+    return res.redirect('/profil/kutuphanem');
+  }
+  if (orderCheck.status === 'cancelled') {
+    return res.redirect('/odeme/beklemede/' + orderId + '?hata=' + encodeURIComponent('İptal edilmiş sipariş onaylanamaz.'));
+  }
+
   const cli = await db.connect();
   try {
     await cli.query('BEGIN');
@@ -185,6 +246,7 @@ router.post('/odeme/beklemede/:id/hizli-onay', requireAuth, async (req, res) => 
           [userId, item.game_id]
         );
       }
+      console.log(`✅ Hızlı onay: Sipariş #${orderId} -> user ${userId} kütüphanesine ${itemsRes.rows.length} oyun eklendi`);
     }
     await cli.query('COMMIT');
     return res.redirect('/profil/kutuphanem');
@@ -207,23 +269,35 @@ router.get('/odeme/sonuc', requireAuth, async (req, res) => {
   const ok = detail && (detail.paymentStatus === 'SUCCESS' || detail.status === 'success');
   if (ok) {
     const ids = readCart(req);
+    const coupon = readCoupon(req);
     const games = (await db.query('SELECT * FROM games WHERE id = ANY($1)', [ids])).rows;
-    const total = games.reduce((s, g) => s + Number(g.price), 0);
-    await finalizeOrder(req.user.id, games, total, 'iyzico', token);
+    const { discount } = calculateCartTotals(games, coupon);
+    const total = games.reduce((s, g) => s + Number(g.price), 0) - discount;
+    try {
+      await finalizeOrder(req.user.id, games, Math.max(0, total), 'iyzico', token, coupon);
+    } catch(e) {
+      console.error('iyzico finalize hatası:', e);
+      return res.status(500).render('error', { message: 'Ödeme onaylandı ama kütüphaneye eklenemedi: ' + e.message, status: 500 });
+    }
     writeCart(res, []);
+    clearCoupon(res);
     return res.redirect('/odeme/basarili');
   }
   res.render('error', { message: 'Ödeme tamamlanamadı.', status: 400 });
 });
 
-// Pending sipariş oluştur — user_library'e EKLEME YAPMA
-async function createPendingOrder(userId, games, total, provider, ref) {
+// Pending sipariş oluştur — user_library'e EKLEME YAPMA (admin onayı bekler)
+async function createPendingOrder(userId, games, total, provider, ref, coupon) {
   const cli = await db.connect();
   try {
     await cli.query('BEGIN');
+    const couponCode = coupon?.code || null;
+    const discountAmount = coupon ? (coupon.discount_amount || 0) : 0;
+    // discount_amount kolonunu da yaz (hesaplanan indirim) - eğer sadece yüzdeli kupon ise hesaplanan discount olarak da yazılabilir
+    // Burada total zaten indirim uygulanmış hal
     const o = await cli.query(
-      'INSERT INTO orders (user_id, total_amount, status, payment_provider, payment_ref) VALUES ($1,$2,$3,$4,$5) RETURNING id',
-      [userId, total, 'pending', provider, ref]
+      'INSERT INTO orders (user_id, total_amount, status, payment_provider, payment_ref, coupon_code, discount_amount) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id',
+      [userId, total, 'pending', provider, ref, couponCode, discountAmount]
     );
     const orderId = o.rows[0].id;
     for (const g of games) {
@@ -239,21 +313,25 @@ async function createPendingOrder(userId, games, total, provider, ref) {
   }
 }
 
-// Paid sipariş — user_library'e EKLE (admin onayı veya iyzico başarısı için)
-async function finalizeOrder(userId, games, total, provider, ref) {
+// Paid sipariş — user_library'e EKLE (admin onayı veya iyzico/mock başarısı için)
+async function finalizeOrder(userId, games, total, provider, ref, coupon) {
   const cli = await db.connect();
   try {
     await cli.query('BEGIN');
+    const couponCode = coupon?.code || null;
+    const discountAmount = coupon ? (coupon.discount_amount || 0) : 0;
     const o = await cli.query(
-      'INSERT INTO orders (user_id, total_amount, status, payment_provider, payment_ref) VALUES ($1,$2,$3,$4,$5) RETURNING id',
-      [userId, total, 'paid', provider, ref]
+      'INSERT INTO orders (user_id, total_amount, status, payment_provider, payment_ref, coupon_code, discount_amount) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id',
+      [userId, total, 'paid', provider, ref, couponCode, discountAmount]
     );
     const orderId = o.rows[0].id;
     for (const g of games) {
       await cli.query('INSERT INTO order_items (order_id, game_id, price_at_purchase) VALUES ($1,$2,$3)', [orderId, g.id, g.price]);
-      await cli.query('INSERT INTO user_library (user_id, game_id) VALUES ($1,$2) ON CONFLICT DO NOTHING', [userId, g.id]);
+      // FIX: ON CONFLICT hedefi explicit
+      await cli.query('INSERT INTO user_library (user_id, game_id) VALUES ($1,$2) ON CONFLICT (user_id, game_id) DO NOTHING', [userId, g.id]);
     }
     await cli.query('COMMIT');
+    console.log(`✅ finalizeOrder: Sipariş #${orderId} (provider ${provider}) -> ${games.length} oyun user ${userId} kütüphanesine eklendi`);
   } catch (e) {
     await cli.query('ROLLBACK');
     throw e;
@@ -263,14 +341,12 @@ async function finalizeOrder(userId, games, total, provider, ref) {
 }
 
 // ── iyzico yardımcıları (TEST modu) ──────────────────────────────
-// Not: Canlıya geçerken gerçek API anahtarlarını gir ve iyzico webhook
-// doğrulamasını ekle (ödemeyi yalnızca sunucu tarafı webhook ile onayla).
-
 async function initIyzico(games, total, body, req) {
   try {
     const apiKey = process.env.IYZICO_API_KEY;
     const secret = process.env.IYZICO_SECRET_KEY;
     const base = process.env.IYZICO_BASE_URL || 'https://sandbox-api.iyzipay.com';
+    if (!apiKey || !secret) return { success: false, error: 'iyzico API anahtarları ayarlanmamış' };
     const basketItems = games.map((g) => ({
       id: String(g.id), name: g.title, category1: 'Games',
       price: Number(g.price).toFixed(2), itemType: 'VIRTUAL'
