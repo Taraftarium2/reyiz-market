@@ -1,26 +1,36 @@
 <%- include('partials/header') %>
-<section class="section">
-  <div class="sec-head">
-    <h2>Oyun Kataloğu</h2>
-    <span class="count"><%= games.length %> oyun</span>
-  </div>
-  <form class="filters" method="get" action="/oyunlar">
-    <input type="text" name="q" placeholder="Oyun ara..." value="<%= q || '' %>">
-    <div class="tags">
-      <a class="chip <%= !tag ? 'active' : '' %>" href="/oyunlar?q=<%= q || '' %>">Tümü</a>
-      <% tags.forEach(function (t) { %>
-        <a class="chip <%= tag === t ? 'active' : '' %>" href="/oyunlar?q=<%= q || '' %>&tag=<%= encodeURIComponent(t) %>"><%= t %></a>
-      <% }) %>
+
+<div class="container section">
+    <h1 class="page-title">Oyun Mağazası</h1>
+
+    <form action="/games" method="GET" class="filter-bar">
+        <input type="text" name="search" placeholder="Oyun ara..." value="<%= currentSearch %>" class="form-input">
+        
+        <select name="genre" class="form-select">
+            <option value="">Tüm Kategoriler</option>
+            <% genres.forEach(g => { %>
+                <option value="<%= g %>" <%= currentGenre === g ? 'selected' : '' %>><%= g %></option>
+            <% }); %>
+        </select>
+
+        <select name="sort" class="form-select">
+            <option value="">Sıralama</option>
+            <option value="price_asc" <%= currentSort === 'price_asc' ? 'selected' : '' %>>Fiyat: Düşükten Yükseğe</option>
+            <option value="price_desc" <%= currentSort === 'price_desc' ? 'selected' : '' %>>Fiyat: Yüksekten Düşüğe</option>
+        </select>
+
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-filter"></i> Filtrele</button>
+    </form>
+
+    <div class="games-grid">
+        <% if (games && games.length > 0) { %>
+            <% games.forEach(game => { %>
+                <%- include('partials/gamecard', { game: game }) %>
+            <% }); %>
+        <% } else { %>
+            <p>Aradığınız kriterlere uygun oyun bulunamadı.</p>
+        <% } %>
     </div>
-  </form>
-  <div class="grid">
-    <% games.forEach(function (g) { %><%- include('partials/gamecard', { game: g }) %><% }) %>
-    <% if (!games.length) { %>
-      <div class="empty">
-        <p>😕 Sonuç bulunamadı.</p>
-        <a class="btn" href="/oyunlar">Tüm oyunları göster</a>
-      </div>
-    <% } %>
-  </div>
-</section>
+</div>
+
 <%- include('partials/footer') %>

@@ -1,15 +1,16 @@
 <%- include('partials/header') %>
 
-<div class="success-wrap">
-  <div class="success-box">
-    <div class="success-icon">🎉</div>
-    <h2>Sipariş Onaylandı!</h2>
-    <p>Oyunların hesabına tanımlandı. Kütüphanemden dilediğin zaman indirebilirsin.</p>
-    <div class="success-btns">
-      <a class="btn big" href="/profil/kutuphanem">⬇ Kütüphaneme Git</a>
-      <a class="btn ghost" href="/siparislerim">Siparişlerim</a>
+<div class="container section">
+    <div class="success-card">
+        <i class="fa-solid fa-circle-check fa-4x text-success"></i>
+        <h1>Siparişiniz Başarıyla Tamamlandı!</h1>
+        <p>Sipariş Numarası: <strong>#<%= orderId %></strong></p>
+        <p>Oyun lisans anahtarlarınız kütüphanenize ve sipariş geçmişinize eklenmiştir.</p>
+        <div class="action-buttons">
+            <a href="/library" class="btn btn-primary"><i class="fa-solid fa-folder-closed"></i> Kütüphaneme Git</a>
+            <a href="/games" class="btn btn-outline">Alışverişe Devam Et</a>
+        </div>
     </div>
-  </div>
 </div>
 
 <%- include('partials/footer') %>

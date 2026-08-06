@@ -1,29 +1,27 @@
 <%- include('partials/header') %>
 
-<div class="auth-wrap">
-  <div class="auth-box">
-    <div class="auth-logo">⚡</div>
-    <h2>Tekrar hoş geldin</h2>
-    <p class="auth-sub">Hesabına giriş yap</p>
-
-    <% if (typeof error !== 'undefined' && error) { %>
-      <div class="alert"><%= error %></div>
-    <% } %>
-
-    <form method="post" action="/giris" class="form" id="loginForm">
-      <div class="form-group">
-        <label for="loginEmail">E-posta</label>
-        <input id="loginEmail" type="email" name="email" placeholder="ornek@mail.com" required autocomplete="email">
-      </div>
-      <div class="form-group">
-        <label for="loginPass">Şifre</label>
-        <input id="loginPass" type="password" name="password" placeholder="••••••••" required autocomplete="current-password">
-      </div>
-      <button class="btn big" type="submit">Giriş Yap →</button>
-    </form>
-
-    <p class="auth-footer">Hesabın yok mu? <a href="/kayit">Kayıt ol</a></p>
-  </div>
+<div class="container section">
+    <div class="auth-card">
+        <h2>Giriş Yap</h2>
+        <% if (registered) { %>
+            <div class="alert alert-success">Kayıt başarılı! Lütfen giriş yapın.</div>
+        <% } %>
+        <% if (error) { %>
+            <div class="alert alert-danger"><%= error %></div>
+        <% } %>
+        <form action="/auth/login" method="POST">
+            <div class="form-group">
+                <label>E-Posta Adresi</label>
+                <input type="email" name="email" class="form-input" required placeholder="ornek@reyizmarket.com">
+            </div>
+            <div class="form-group">
+                <label>Şifre</label>
+                <input type="password" name="password" class="form-input" required placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Giriş Yap</button>
+        </form>
+        <p class="auth-footer">Hesabınız yok mu? <a href="/auth/register">Kayıt Ol</a></p>
+    </div>
 </div>
 
 <%- include('partials/footer') %>

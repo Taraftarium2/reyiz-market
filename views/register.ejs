@@ -1,33 +1,28 @@
 <%- include('partials/header') %>
 
-<div class="auth-wrap">
-  <div class="auth-box">
-    <div class="auth-logo">⚡</div>
-    <h2>Hesap oluştur</h2>
-    <p class="auth-sub">Ücretsiz kayıt ol, oyunları keşfet</p>
-
-    <% if (typeof error !== 'undefined' && error) { %>
-      <div class="alert"><%= error %></div>
-    <% } %>
-
-    <form method="post" action="/kayit" class="form" id="registerForm">
-      <div class="form-group">
-        <label for="regName">Adın</label>
-        <input id="regName" name="name" placeholder="Adın Soyadın" autocomplete="name">
-      </div>
-      <div class="form-group">
-        <label for="regEmail">E-posta</label>
-        <input id="regEmail" type="email" name="email" placeholder="ornek@mail.com" required autocomplete="email">
-      </div>
-      <div class="form-group">
-        <label for="regPass">Şifre <span style="color:var(--faint);font-weight:400">(en az 6 karakter)</span></label>
-        <input id="regPass" type="password" name="password" placeholder="••••••••" required minlength="6" autocomplete="new-password">
-      </div>
-      <button class="btn big" type="submit">Hesap Oluştur →</button>
-    </form>
-
-    <p class="auth-footer">Zaten hesabın var mı? <a href="/giris">Giriş yap</a></p>
-  </div>
+<div class="container section">
+    <div class="auth-card">
+        <h2>Kayıt Ol</h2>
+        <% if (error) { %>
+            <div class="alert alert-danger"><%= error %></div>
+        <% } %>
+        <form action="/auth/register" method="POST">
+            <div class="form-group">
+                <label>Kullanıcı Adı</label>
+                <input type="text" name="username" class="form-input" required placeholder="GamerReyiz">
+            </div>
+            <div class="form-group">
+                <label>E-Posta Adresi</label>
+                <input type="email" name="email" class="form-input" required placeholder="ornek@reyizmarket.com">
+            </div>
+            <div class="form-group">
+                <label>Şifre</label>
+                <input type="password" name="password" class="form-input" required placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Kayıt Ol</button>
+        </form>
+        <p class="auth-footer">Zaten hesabınız var mı? <a href="/auth/login">Giriş Yap</a></p>
+    </div>
 </div>
 
 <%- include('partials/footer') %>
