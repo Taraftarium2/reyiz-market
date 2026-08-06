@@ -7,49 +7,90 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   
-  <!-- Primary SEO -->
-  <title><%= title %> · Reyiz Market</title>
-  <meta name="title" content="<%= title %> · Reyiz Market">
-  <meta name="description" content="Reyiz Market — TikTok LIVE yayıncıları için Node.js tabanlı, chat ve hediye etkileşimli dijital oyun pazarı. Anında indirme, %100 canlı yayın uyumlu.">
-  <meta name="keywords" content="tiktok live oyunları, tiktok canlı yayın oyunu, nodejs tiktok botu, interaktif yayın oyunları, reyiz market, canlı yayın hediye oyunu">
-  <meta name="robots" content="index, follow">
+  <!-- 🔍 Google & Bing 1st Page Targeted SEO -->
+  <title><%= title %> · TikTok İnteraktif Oyunlar · TikTok Interactive Games</title>
+  <meta name="title" content="<%= title %> · TikTok İnteraktif Oyunlar · TikTok Interactive Games">
+  <meta name="description" content="Reyiz Market — TikTok interaktif oyunlar ve TikTok interactive games dijital mağazası. Canlı yayın chat & hediye etkileşimli Node.js oyun yazılımları. Anında güvenli indirme!">
+  <meta name="keywords" content="tiktok interaktif oyunlar, tiktok interactive games, tiktok canlı yayın oyunları, tiktok live interactive games, tiktok chat games, tiktok gift games, nodejs tiktok botu, reyiz market, canlı yayın oyun yazılımları">
+  <meta name="author" content="Reyiz Market">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <meta name="googlebot" content="index, follow">
   <link rel="canonical" href="https://reyizmarket.click/">
 
-  <!-- Open Graph / Facebook -->
+  <!-- Open Graph / Social Media -->
   <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Reyiz Market">
   <meta property="og:url" content="https://reyizmarket.click/">
-  <meta property="og:title" content="<%= title %> · Reyiz Market">
-  <meta property="og:description" content="TikTok LIVE yayıncıları için interaktif oyun pazarı. Satın al, Kütüphanenden tek tıkla indir ve yayınını canlıya taşı!">
+  <meta property="og:title" content="TikTok İnteraktif Oyunlar · TikTok Interactive Games — Reyiz Market">
+  <meta property="og:description" content="TikTok LIVE yayıncıları için interaktif oyunlar ve TikTok interactive games mağazası. Satın al, Kütüphanenden tek tıkla indir ve yayınını canlıya taşı!">
   <meta property="og:image" content="https://reyizmarket.click/og-image.jpg">
 
-  <!-- Twitter -->
+  <!-- Twitter Card -->
   <meta property="twitter:card" content="summary_large_image">
   <meta property="twitter:url" content="https://reyizmarket.click/">
-  <meta property="twitter:title" content="<%= title %> · Reyiz Market">
-  <meta property="twitter:description" content="TikTok LIVE yayıncıları için interaktif oyun pazarı. Satın al, Kütüphanenden tek tıkla indir ve yayınını canlıya taşı!">
+  <meta property="twitter:title" content="TikTok İnteraktif Oyunlar · TikTok Interactive Games — Reyiz Market">
+  <meta property="twitter:description" content="TikTok LIVE yayıncıları için interaktif oyunlar ve TikTok interactive games mağazası. Satın al, Kütüphanenden tek tıkla indir ve yayınını canlıya taşı!">
 
-  <!-- Schema.org JSON-LD (Google Rich Snippet) -->
+  <!-- 🌟 Google Rich Snippets & Structured Data (JSON-LD) -->
   <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    "name": "Reyiz Market - TikTok LIVE Oyunları",
-    "operatingSystem": "Windows, macOS, Linux, Node.js",
-    "applicationCategory": "GameApplication",
-    "ratingValue": "4.9",
-    "ratingCount": "1250",
-    "offers": {
-      "@type": "Offer",
-      "price": "99.00",
-      "priceCurrency": "TRY"
+  [
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Reyiz Market - TikTok İnteraktif Oyunlar",
+      "alternateName": "TikTok Interactive Games Store",
+      "url": "https://reyizmarket.click/",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://reyizmarket.click/oyunlar?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "TikTok İnteraktif Oyunlar Altyapısı",
+      "operatingSystem": "Windows, macOS, Linux, Node.js",
+      "applicationCategory": "GameApplication",
+      "ratingValue": "4.9",
+      "ratingCount": "1280",
+      "offers": {
+        "@type": "AggregateOffer",
+        "lowPrice": "99.00",
+        "highPrice": "299.00",
+        "priceCurrency": "TRY",
+        "offerCount": "50"
+      }
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "TikTok interaktif oyunlar nasıl kurulur?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Reyiz Market'ten satın aldığınız oyunu zip olarak indirdikten sonra .env dosyasına TikTok kullanıcı adınızı yazıp npm start komutuyla 1 dakikada çalıştırabilirsiniz."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "TikTok interactive games work with OBS Studio?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, all TikTok interactive games work seamlessly with OBS Studio and TikTok LIVE Studio via Browser Source."
+          }
+        }
+      ]
     }
-  }
+  ]
   </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <!-- CSS Cache Buster v2.1.0 -> Normal penceredeki eski önbelleği anında temizler -->
-  <link rel="stylesheet" href="/styles.css?v=2.1.0">
+  <!-- CSS Cache Buster v2.2.0 -> Önbellek yenileme -->
+  <link rel="stylesheet" href="/styles.css?v=2.2.0">
 </head>
 <body>
 <header class="nav">

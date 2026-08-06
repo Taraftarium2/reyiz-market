@@ -1,5 +1,5 @@
 <article class="card" data-title="<%= game.title.toLowerCase() %>" data-tag="<%= game.tag || '' %>">
-  <div class="cover">
+  <div class="cover" onclick="openGameModal(<%= JSON.stringify(game) %>)" style="cursor:pointer" title="Detayları pop-up ile gör">
     <% if (game.cover_image_url) { %>
       <img src="<%= game.cover_image_url %>" alt="<%= game.title %>">
     <% } else { %>
@@ -13,14 +13,14 @@
       <div class="rating-stars">★★★★★ <span class="rating-count">(4.9)</span></div>
       <span class="indirme-badge">Node <%= game.node_version || '18+' %></span>
     </div>
-    <h3><%= game.title %></h3>
+    <h3 onclick="openGameModal(<%= JSON.stringify(game) %>)" style="cursor:pointer" title="Detayları pop-up ile gör"><%= game.title %></h3>
     <p><%= (game.description || '').slice(0, 85) %><% if ((game.description||'').length > 85) { %>…<% } %></p>
     <div class="card-foot">
       <div>
         <span class="price">₺<%= Number(game.price).toFixed(0) %></span>
       </div>
       <div style="display:flex;gap:6px;align-items:center">
-        <a class="btn ghost sm" href="/oyunlar/<%= game.slug %>">Detay</a>
+        <button class="btn ghost sm" type="button" onclick="openGameModal(<%= JSON.stringify(game) %>)">Detay 👁️</button>
         <form method="post" action="/sepet/ekle" style="margin:0">
           <input type="hidden" name="game_id" value="<%= game.id %>">
           <button class="btn sm">+ Sepet</button>
