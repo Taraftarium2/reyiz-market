@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= title %> · Reyiz Market</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header class="nav">
+  <a class="logo" href="/">⚡ Reyiz<span>Market</span></a>
+  <button class="burger" onclick="document.body.classList.toggle('menu-open')">☰</button>
+  <nav class="links">
+    <a href="/oyunlar">Oyunlar</a>
+    <a href="/sepet">Sepet (<%= cartCount %>)</a>
+    <% if (user) { %>
+      <a href="/profil/kutuphanem">Kütüphanem</a>
+      <a href="/profil">Profil</a>
+      <a href="/cikis">Çıkış</a>
+    <% } else { %>
+      <a href="/giris">Giriş</a>
+      <a class="btn" href="/kayit">Üye Ol</a>
+    <% } %>
+  </nav>
+</header>
+<main>

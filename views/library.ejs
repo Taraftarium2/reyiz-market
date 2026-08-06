@@ -1,0 +1,24 @@
+<%- include('partials/header') %>
+<section class="section">
+  <h2>Kütüphanem</h2>
+  <% if (!games.length) { %>
+    <p class="empty">Henüz oyun satın almadın. <a href="/oyunlar">Mağazaya git</a>.</p>
+  <% } else { %>
+    <div class="grid">
+      <% games.forEach(function (g) { %>
+        <article class="card">
+          <div class="cover" style="background:<%= g.cover_image_url || 'linear-gradient(135deg,#8b5cf6,#f97316)' %>">
+            <% if (g.cover_image_url) { %><img src="<%= g.cover_image_url %>"><% } %>
+          </div>
+          <div class="card-body">
+            <h3><%= g.title %></h3>
+            <p class="muted">İndirme: <%= g.download_count %></p>
+            <a class="btn" href="<%= g.downloadUrl %>">⬇ İndir (.zip)</a>
+            <p class="note">Bağlantı 10 dakika geçerlidir. İstediğin zaman yeniden alabilirsin.</p>
+          </div>
+        </article>
+      <% }) %>
+    </div>
+  <% } %>
+</section>
+<%- include('partials/footer') %>

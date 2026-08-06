@@ -1,0 +1,19 @@
+<%- include('partials/header') %>
+<section class="section narrow">
+  <h2>Ödeme</h2>
+  <% if (typeof error !== 'undefined' && error) { %><div class="alert"><%= error %></div><% } %>
+  <div class="cartlist">
+    <% items.forEach(function (g) { %>
+      <div class="cartrow"><span><b><%= g.title %></b></span><span>₺<%= Number(g.price).toFixed(0) %></span></div>
+    <% }) %>
+  </div>
+  <div class="total">Toplam: <b>₺<%= total.toFixed(0) %></b></div>
+  <form method="post" action="/odeme" class="form">
+    <input name="name" placeholder="Ad" required>
+    <input name="surname" placeholder="Soyad" required>
+    <input name="phone" placeholder="Telefon" required>
+    <button class="btn big" type="submit">Ödemeyi Tamamla</button>
+  </form>
+  <p class="note">Ödeme güvenli şekilde işlenir. Dosyalar yalnızca ödeme onayından sonra hesabına tanımlanır.</p>
+</section>
+<%- include('partials/footer') %>

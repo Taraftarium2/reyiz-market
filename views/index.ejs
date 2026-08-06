@@ -1,0 +1,43 @@
+<%- include('partials/header') %>
+<section class="hero">
+  <div class="hero-inner">
+    <h1>TikTok LIVE <span>Oyunların</span> Burada</h1>
+    <p>Reyiz Market, yayınını interaktif hale getiren Node.js tabanlı oyunların dijital mağazası. Üye ol, satın al, <strong>Kütüphanem'den</strong> indir.</p>
+    <div class="cta">
+      <a class="btn big" href="/oyunlar">Oyunları Keşfet</a>
+      <a class="btn ghost" href="#nasil">Nasıl Çalışır</a>
+    </div>
+  </div>
+  <div class="hero-glow"></div>
+</section>
+
+<section class="stats">
+  <div><b>50+</b><span>Oyun</span></div>
+  <div><b>10K+</b><span>Yayıncı</span></div>
+  <div><b>24/7</b><span>Dijital Teslimat</span></div>
+  <div><b>%100</b><span>Kalıcı Erişim</span></div>
+</section>
+
+<section class="section" id="oyunlar">
+  <h2>Öne Çıkan Oyunlar</h2>
+  <div class="grid">
+    <% featured.forEach(function (g) { %><%- include('partials/gamecard', { game: g }) %><% }) %>
+  </div>
+  <div class="center"><a class="btn ghost" href="/oyunlar">Tüm Oyunları Gör</a></div>
+</section>
+
+<section class="section dark" id="nasil">
+  <h2>Nasıl Çalışır?</h2>
+  <div class="steps">
+    <div class="step"><span>1</span><h4>Üye Ol</h4><p>E-posta + şifre ile hızlı kayıt.</p></div>
+    <div class="step"><span>2</span><h4>Kataloğu İncele</h4><p>Oyunları keşfet, sepete ekle.</p></div>
+    <div class="step"><span>3</span><h4>Satın Al</h4><p>TL ile güvenli ödeme.</p></div>
+    <div class="step"><span>4</span><h4>Kütüphanem'den İndir</h4><p>Satın aldığın oyunları istediğin zaman indir.</p></div>
+  </div>
+</section>
+
+<section class="cta-band">
+  <h2>Yayınını canlıya taşı 🚀</h2>
+  <a class="btn big" href="/kayit">Hemen Üye Ol</a>
+</section>
+<%- include('partials/footer') %>

@@ -1,0 +1,12 @@
+<%- include('partials/header') %>
+<section class="section narrow">
+  <h2>Giriş Yap</h2>
+  <% if (typeof error !== 'undefined' && error) { %><div class="alert"><%= error %></div><% } %>
+  <form method="post" action="/giris" class="form">
+    <input type="email" name="email" placeholder="E-posta" required>
+    <input type="password" name="password" placeholder="Şifre" required>
+    <button class="btn big">Giriş Yap</button>
+  </form>
+  <p class="note">Hesabın yok mu? <a href="/kayit">Kayıt ol</a></p>
+</section>
+<%- include('partials/footer') %>

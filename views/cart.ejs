@@ -1,0 +1,20 @@
+<%- include('partials/header') %>
+<section class="section">
+  <h2>Sepetim</h2>
+  <% if (!items.length) { %>
+    <p class="empty">Sepetin boş. <a href="/oyunlar">Oyunlara göz at</a>.</p>
+  <% } else { %>
+    <div class="cartlist">
+      <% items.forEach(function (g) { %>
+        <div class="cartrow">
+          <span><b><%= g.title %></b></span>
+          <span>₺<%= Number(g.price).toFixed(0) %></span>
+          <form method="post" action="/sepet/sil/<%= g.id %>"><button class="btn ghost sm">Sil</button></form>
+        </div>
+      <% }) %>
+    </div>
+    <div class="total">Toplam: <b>₺<%= total.toFixed(0) %></b></div>
+    <a class="btn big" href="/odeme">Ödemeye Geç</a>
+  <% } %>
+</section>
+<%- include('partials/footer') %>
