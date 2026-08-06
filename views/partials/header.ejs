@@ -61,38 +61,20 @@
         "priceCurrency": "TRY",
         "offerCount": "50"
       }
-    },
-    {
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      "mainEntity": [
-        {
-          "@type": "Question",
-          "name": "TikTok interaktif oyunlar nasıl kurulur?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Reyiz Market'ten satın aldığınız oyunu zip olarak indirdikten sonra .env dosyasına TikTok kullanıcı adınızı yazıp npm start komutuyla 1 dakikada çalıştırabilirsiniz."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "TikTok interactive games work with OBS Studio?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Yes, all TikTok interactive games work seamlessly with OBS Studio and TikTok LIVE Studio via Browser Source."
-          }
-        }
-      ]
     }
   ]
   </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <!-- CSS Cache Buster v2.2.0 -> Önbellek yenileme -->
-  <link rel="stylesheet" href="/styles.css?v=2.2.0">
+  <link rel="stylesheet" href="/styles.css?v=2.3.0">
 </head>
 <body>
+<!-- TOP ANNOUNCEMENT BANNER -->
+<div style="background: linear-gradient(90deg, #7c3aed, #ea580c); color: #fff; text-align: center; padding: 8px 16px; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.3px;">
+  🎟️ İndirim Kodu: <span style="background: rgba(255,255,255,0.25); padding: 2px 8px; border-radius: 4px; font-family: monospace;">TIKTOK20</span> ile tüm oyunlarda <b>%20 ANINDA İNDİRİM!</b>
+</div>
+
 <header class="nav">
   <a class="logo" href="/">
     <span class="logo-icon">⚡</span>
@@ -100,12 +82,14 @@
   </a>
   <button class="burger" id="burgerBtn" aria-label="Menüyü Aç/Kapat">☰</button>
   <nav class="links" id="navLinks">
+    <a href="/oyunlar" style="font-weight: 600;">🎮 Oyun Mağazası</a>
+    <a href="/rehber" style="font-weight: 600;">⚡ Kurulum Rehberi</a>
     <a href="/sepet" class="cart-nav-badge" id="navCartBadge">🛒 Sepet <span class="cart-count-pill" id="navCartCount"><%= cartCount %></span></a>
     <% if (user) { %>
       <a href="/siparislerim">📦 Siparişlerim</a>
-      <a href="/profil/kutuphanem">📚 Kütüphanem</a>
+      <a href="/profil/kutuphanem" style="font-weight: 700; color: var(--yellow);">📚 Kütüphanem</a>
       <a href="/profil">👤 Profil</a>
-      <% if (user.role === 'admin') { %><a href="/admin" class="btn sm">⚙ Admin</a><% } %>
+      <% if (user.role === 'admin') { %><a href="/admin" class="btn sm" style="background: var(--purple);">⚙ Admin Console</a><% } %>
       <a href="/cikis" style="color:var(--muted)">Çıkış</a>
     <% } else { %>
       <a href="/giris">Giriş Yap</a>
