@@ -2,9 +2,10 @@
   <div class="cover" style="background:<%= game.cover_image_url || 'linear-gradient(135deg,#8b5cf6,#f97316)' %>">
     <% if (game.cover_image_url) { %><img src="<%= game.cover_image_url %>" alt=""><% } %>
     <span class="tag"><%= game.tag %></span>
+    <% if (game.featured) { %><span class="badge hot">🔥 Popüler</span><% } %>
   </div>
   <div class="card-body">
-    <h3><%= game.title %></h3>
+    <h3><a href="/oyunlar/<%= game.slug %>"><%= game.title %></a></h3>
     <p><%= (game.description || '').slice(0, 90) %></p>
     <div class="row">
       <span class="price">₺<%= Number(game.price).toFixed(0) %></span>
@@ -13,6 +14,5 @@
         <button class="btn sm">Sepete Ekle</button>
       </form>
     </div>
-    <a class="detail" href="/oyunlar/<%= game.slug %>">İncele →</a>
   </div>
 </article>
