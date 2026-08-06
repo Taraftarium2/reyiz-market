@@ -48,6 +48,7 @@ app.use('/', require('./routes/auth'));
 app.use('/', require('./routes/games'));
 app.use('/', require('./routes/checkout'));
 app.use('/', require('./routes/library'));
+app.use('/', require('./routes/orders'));
 app.use('/admin', require('./routes/admin'));
 
 app.use((req, res) => res.status(404).render('error', { message: 'Sayfa bulunamadı.', status: 404 }));
