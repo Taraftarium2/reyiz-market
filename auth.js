@@ -1,41 +1,44 @@
-const jwt = require('jsonwebtoken');
+const passport = require('passport');
+const LocalStrategy = require('passport-local').Strategy;
+const bcrypt = require('bcryptjs');
 const db = require('./db');
 
-const SECRET = process.env.JWT_SECRET || 'degistir-bu-anahtari';
-
-function signToken(user) {
-  return jwt.sign({ id: user.id, email: user.email, role: user.role }, SECRET, { expiresIn: '7d' });
-}
-
-function getUser(req) {
-  const t = req && req.cookies ? req.cookies.token : null;
-  if (!t) return null;
-  try { return jwt.verify(t, SECRET); } catch (e) { return null; }
-}
-
-function requireAuth(req, res, next) {
-  const u = getUser(req);
-  if (!u) return res.redirect('/giris');
-  req.user = u;
-  next();
-}
-
-async function requireAdmin(req, res, next) {
-  const u = getUser(req);
-  if (!u) return res.redirect('/giris');
-  try {
-    const dbUser = (await db.query('SELECT id, email, role FROM users WHERE id=$1', [u.id])).rows[0];
-    if (dbUser && dbUser.role === 'admin') {
-      req.user = dbUser;
-      return next();
+passport.use(new LocalStrategy({
+    usernameField: 'email',
+    passwordField: 'password'
+}, async (email, password, done) => {
+    try {
+        const result = await db.query('SELECT * FROM users WHERE email = $1', [email.toLowerCase()]);
+        if (result.rows.length === 0) {
+            return done(null, false, { message: 'Geçersiz e-posta veya şifre.' });
+        }
+        
+        const user = result.rows[0];
+        const isMatch = await bcrypt.compare(password, user.password_hash);
+        if (!isMatch) {
+            return done(null, false, { message: 'Geçersiz e-posta veya şifre.' });
+        }
+        
+        return done(null, user);
+    } catch (err) {
+        return done(err);
     }
-  } catch (e) {
-    if (u.role === 'admin') {
-      req.user = u;
-      return next();
-    }
-  }
-  return res.status(403).render('error', { message: 'Yetkisiz erişim. Admin yetkiniz bulunmuyor.', status: 403 });
-}
+}));
 
-module.exports = { signToken, getUser, requireAuth, requireAdmin };
+passport.serializeUser((user, done) => {
+    done(null, user.id);
+});
+
+passport.deserializeUser(async (id, done) => {
+    try {
+        const result = await db.query('SELECT id, username, email, role, created_at FROM users WHERE id = $1', [id]);
+        if (result.rows.length === 0) {
+            return done(null, false);
+        }
+        done(null, result.rows[0]);
+    } catch (err) {
+        done(err);
+    }
+});
+
+module.exports = passport;

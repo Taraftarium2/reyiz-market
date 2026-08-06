@@ -1,8 +1,8 @@
-[providers]
-providers = ["node"]
+[phases.setup]
+nixPkgs = ["nodejs-18_x"]
 
-[build]
-cmds = ["npm ci --omit=dev"]
+[phases.build]
+cmds = ["npm install"]
 
 [start]
 cmd = "node server.js"

@@ -1,138 +1,97 @@
 require('dotenv').config();
-require('express-async-errors'); // async route hatalarını otomatik olarak hata yakalayıcıya yönlendirir
 const express = require('express');
-const cookieParser = require('cookie-parser');
-const rateLimit = require('express-rate-limit');
 const path = require('path');
-const fs = require('fs');
-
+const session = require('express-session');
+const passport = require('./auth');
 const db = require('./db');
-const { getUser } = require('./auth');
-const { STORAGE_DIR, isR2Configured } = require('./storage');
 
 const app = express();
-app.disable('x-powered-by');
+const PORT = process.env.PORT || 3000;
+
+// Railway / Reverse Proxy HTTPS desteği için
+app.set('trust proxy', 1);
+
+// View engine setup
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
-app.use(express.urlencoded({ extended: true }));
+
+// Middlewares
 app.use(express.json());
-app.use(cookieParser());
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Sağlık kontrolü (Railway / uptime monitor)
-app.get('/health', async (req, res) => {
-  try { await db.query('SELECT 1'); res.send('ok'); }
-  catch (e) { res.status(503).send('db error'); }
-});
-
-// SEO: robots.txt
-app.get('/robots.txt', (req, res) => {
-  res.type('text/plain');
-  res.send("User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /profil\nSitemap: https://reyizmarket.click/sitemap.xml");
-});
-
-// SEO: sitemap.xml (Google Indexing Standard)
-app.get('/sitemap.xml', async (req, res) => {
-  res.type('application/xml');
-  try {
-    const games = (await db.query('SELECT slug, created_at FROM games')).rows;
-    let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
-    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n';
-    xml += '        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n';
-    xml += '  <url><loc>https://reyizmarket.click/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>\n';
-    xml += '  <url><loc>https://reyizmarket.click/oyunlar</loc><changefreq>daily</changefreq><priority>0.9</priority></url>\n';
-    xml += '  <url><loc>https://reyizmarket.click/rehber</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>\n';
-    games.forEach(g => {
-      xml += `  <url><loc>https://reyizmarket.click/oyunlar/${g.slug}</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>\n`;
-    });
-    xml += '</urlset>';
-    res.send(xml);
-  } catch (e) {
-    res.send('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://reyizmarket.click/</loc></url></urlset>');
-  }
-});
-
-// storage klasörünün var olduğundan emin ol
-const targetStorageDir = (STORAGE_DIR && String(STORAGE_DIR).trim() !== '') ? STORAGE_DIR : path.join(__dirname, 'storage');
-if (!fs.existsSync(targetStorageDir)) {
-  try { fs.mkdirSync(targetStorageDir, { recursive: true }); } catch (e) { if (e.code !== 'EEXIST') throw e; }
-}
-try { fs.writeFileSync(path.join(targetStorageDir, '.gitkeep'), ''); } catch (e) {}
-
-// Otomatik veritabanı kurulumu ve Admin hesabı garantisi
-(async function initDatabase() {
-  try {
-    const schemaSql = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
-    await db.query(schemaSql);
-    await db.query('ALTER TABLE games ADD COLUMN IF NOT EXISTS external_buy_url TEXT');
-    await db.query('ALTER TABLE orders ADD COLUMN IF NOT EXISTS coupon_code TEXT');
-    await db.query('ALTER TABLE orders ADD COLUMN IF NOT EXISTS discount_amount NUMERIC(10,2) DEFAULT 0');
-
-    // Örnek indirim kuponu kontrolü
-    const existingCoupon = await db.query("SELECT id FROM coupons WHERE code='TIKTOK20'");
-    if (!existingCoupon.rows.length) {
-      await db.query("INSERT INTO coupons (code, discount_percent, active) VALUES ('TIKTOK20', 20, true)");
-      console.log('✅ Varsayılan kupon eklendi: TIKTOK20 (%20 İndirim)');
+// Session ayarları
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'reyiz-market-super-secret-key-2026',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'lax',
+        maxAge: 24 * 60 * 60 * 1000 // 24 saat
     }
-    
-    const adminEmail = process.env.ADMIN_EMAIL || 'admin@reyizmarket.click';
-    const adminPass = process.env.ADMIN_PASSWORD || 'admin123';
-    const bcrypt = require('bcryptjs');
-    const hash = await bcrypt.hash(adminPass, 10);
-    
-    const existing = await db.query('SELECT id FROM users WHERE email=$1', [adminEmail]);
-    if (!existing.rows.length) {
-      await db.query('INSERT INTO users (email, password_hash, name, role) VALUES ($1,$2,$3,$4)',
-        [adminEmail, hash, 'Admin', 'admin']);
-      console.log('✅ Admin hesabı sıfırdan oluşturuldu:', adminEmail);
-    } else {
-      await db.query('UPDATE users SET password_hash=$1, role=$2 WHERE email=$3',
-        [hash, 'admin', adminEmail]);
-      console.log('✅ Admin hesabı şifre ve yetkisi güncellendi:', adminEmail);
-    }
-  } catch (err) {
-    console.error('⚠️ DB otomatik kurulum uyarısı:', err.message);
-  }
-})();
+}));
 
-// Tüm istekler için ortak veriler (kullanıcı, sepet sayısı, başlık)
+// Passport başlatma
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Şablonlar için global değişkenler
 app.use((req, res, next) => {
-  res.locals.user = getUser(req);
-  let cart = [];
-  try { cart = req.cookies.cart ? JSON.parse(req.cookies.cart) : []; } catch (e) {}
-  res.locals.cartCount = cart.length;
-  res.locals.title = 'Reyiz Market';
-  next();
+    res.locals.user = req.user || null;
+    res.locals.cart = req.session.cart || [];
+    next();
 });
 
-// Rate limiting: giriş/kayıt ve indirme
-const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 30, message: 'Çok fazla deneme. Lütfen biraz bekleyin.' });
-app.use('/giris', authLimiter);
-app.use('/kayit', authLimiter);
-
-app.use('/', require('./routes/auth'));
-app.use('/', require('./routes/games'));
-app.use('/', require('./routes/checkout'));
-app.use('/', require('./routes/library'));
-app.use('/', require('./routes/orders'));
-app.use('/admin', require('./routes/admin'));
-
-app.use((req, res) => res.status(404).render('error', { message: 'Sayfa bulunamadı.', status: 404 }));
-
-// Global hata yakalayıcı — uygulama çökmesin, temiz hata sayfası göstersin
-app.use((err, req, res, next) => {
-  console.error('❌ Hata:', err);
-  res.status(500).render('error', { message: 'Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.', status: 500 });
+// Health check endpoint (Railway için)
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'ok', timestamp: new Date() });
 });
 
-// Beklenmedik çökmelere karşı koruma (Node çökmesin)
-process.on('unhandledRejection', (err) => console.error('Unhandled Rejection:', err));
-process.on('uncaughtException', (err) => console.error('Uncaught Exception:', err));
+// Rotalar
+const authRoutes = require('./routes/auth');
+const gamesRoutes = require('./routes/games');
+const checkoutRoutes = require('./routes/checkout');
+const ordersRoutes = require('./routes/orders');
+const libraryRoutes = require('./routes/library');
+const adminRoutes = require('./routes/admin');
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  const r2msg = isR2Configured() ? '✅ Cloudflare R2 aktif (bucket: ' + (process.env.R2_BUCKET || '') + ')' : '⚠️ R2 YAPILANDIRILMADI — dosyalar sadece geçici local storage\'de saklanacak. Railway "Variables" bölümüne R2_* ekle.';
-  console.log('⚡ Reyiz Market çalışıyor → http://localhost:' + PORT);
-  console.log(r2msg);
-  console.log('📂 STORAGE_DIR:', STORAGE_DIR);
+app.use('/auth', authRoutes);
+app.use('/games', gamesRoutes);
+app.use('/checkout', checkoutRoutes);
+app.use('/orders', ordersRoutes);
+app.use('/library', libraryRoutes);
+app.use('/admin', adminRoutes);
+
+// Anasayfa
+app.get('/', async (req, res) => {
+    try {
+        let featuredGames = [];
+        let latestGames = [];
+        
+        if (process.env.DATABASE_URL) {
+            const featuredRes = await db.query('SELECT * FROM games WHERE is_featured = true LIMIT 6');
+            const latestRes = await db.query('SELECT * FROM games ORDER BY created_at DESC LIMIT 8');
+            featuredGames = featuredRes.rows;
+            latestGames = latestRes.rows;
+        }
+
+        res.render('index', { featuredGames, latestGames });
+    } catch (err) {
+        console.error('[Anasayfa Hatası]', err);
+        res.render('index', { featuredGames: [], latestGames: [] });
+    }
+});
+
+// 404 Sayfası
+app.use((req, res) => {
+    res.status(404).render('error', { message: 'Aradığınız sayfa bulunamadı.' });
+});
+
+// Sunucuyu başlatma
+app.listen(PORT, '0.0.0.0', async () => {
+    console.log(`[Reyiz Market] Sunucu ${PORT} portunda 0.0.0.0 adresi üzerinde aktif!`);
+    
+    // Veritabanı tablolarını doğrulama ve ilklendirme
+    await db.initDb();
 });
