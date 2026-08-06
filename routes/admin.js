@@ -321,6 +321,59 @@ router.post('/siparis/:id/sil', requireAdmin, async (req, res) => {
   res.redirect('/admin');
 });
 
+// ── ACİL: Tüm Bekleyen Siparişleri Anında Kütüphaneye Ekle (Tek Tık Fix) ──
+router.post('/fix-kutuphane-hemen', requireAdmin, async (req, res) => {
+  const cli = await db.connect();
+  try {
+    await cli.query('BEGIN');
+    const pending = (await cli.query(`SELECT id, user_id FROM orders WHERE status='pending'`)).rows;
+    let fixedOrders = 0;
+    let fixedItems = 0;
+    for (const o of pending) {
+      const items = (await cli.query(`SELECT game_id FROM order_items WHERE order_id=$1`, [o.id])).rows;
+      for (const it of items) {
+        await cli.query(`INSERT INTO user_library (user_id, game_id) VALUES ($1,$2) ON CONFLICT (user_id, game_id) DO NOTHING`, [o.user_id, it.game_id]);
+        fixedItems++;
+      }
+      await cli.query(`UPDATE orders SET status='paid' WHERE id=$1`, [o.id]);
+      fixedOrders++;
+    }
+    await cli.query('COMMIT');
+    console.log(`🚀 FIX: ${fixedOrders} pending sipariş, ${fixedItems} oyun anında kütüphaneye eklendi`);
+    return res.redirect('/admin?onayBasarili=' + fixedOrders + '_siparis_fixlendi');
+  } catch (e) {
+    await cli.query('ROLLBACK');
+    console.error('Fix kütüphane hatası:', e.message);
+    return res.redirect('/admin?onayHata=' + encodeURIComponent(e.message));
+  } finally {
+    cli.release();
+  }
+});
+router.get('/fix-kutuphane-hemen', requireAdmin, async (req, res) => {
+  // GET ile de çalışsın (linkten tıkla)
+  const cli = await db.connect();
+  try {
+    await cli.query('BEGIN');
+    const pending = (await cli.query(`SELECT id, user_id FROM orders WHERE status='pending'`)).rows;
+    let fixedOrders = 0;
+    for (const o of pending) {
+      const items = (await cli.query(`SELECT game_id FROM order_items WHERE order_id=$1`, [o.id])).rows;
+      for (const it of items) {
+        await cli.query(`INSERT INTO user_library (user_id, game_id) VALUES ($1,$2) ON CONFLICT (user_id, game_id) DO NOTHING`, [o.user_id, it.game_id]);
+      }
+      await cli.query(`UPDATE orders SET status='paid' WHERE id=$1`, [o.id]);
+      fixedOrders++;
+    }
+    await cli.query('COMMIT');
+    res.json({ ok: true, fixedOrders, message: `${fixedOrders} pending sipariş anında kütüphaneye eklendi` });
+  } catch (e) {
+    await cli.query('ROLLBACK');
+    res.status(500).json({ ok: false, error: e.message });
+  } finally {
+    cli.release();
+  }
+});
+
 // ── Kullanıcı Rol Değiştir (Admin Yetkisi Ver / Al) ─────────────────
 router.post('/kullanici/:id/rol', requireAdmin, async (req, res) => {
   const userId = Number(req.params.id);

@@ -104,6 +104,9 @@ router.post('/odeme', requireAuth, async (req, res) => {
   }
   const { subtotal, discount, total } = calculateCartTotals(games, coupon);
   const mode = process.env.PAYMENT_MODE || 'manual';
+  // YENI: Anında teslim bayrağı - manual modda bile kütüphaneye hemen ekle
+  // Railway Variables: INSTANT_DELIVERY=true  (varsayılan true, admin onayı beklemeden ekler)
+  const instantDelivery = process.env.INSTANT_DELIVERY !== 'false'; // default true
 
   // Hediye kontrolü (Başkasına Oyun Al)
   let targetUserId = req.user.id;
@@ -142,7 +145,21 @@ router.post('/odeme', requireAuth, async (req, res) => {
     return res.redirect('/odeme/basarili');
   }
 
-  // manual modu (varsayılan) -> pending order, admin onayı gerekli
+  // manual modu - INSTANT_DELIVERY true ise direkt kütüphaneye ekle (anında teslim)
+  if (instantDelivery) {
+    try {
+      await finalizeOrder(targetUserId, games, total, 'manual_instant', 'RM-' + Date.now().toString(36).toUpperCase(), coupon);
+      console.log(`⚡ INSTANT manual sipariş: ${games.length} oyun user ${targetUserId} kütüphanesine ANINDA eklendi (pending beklemeden)`);
+    } catch(e) {
+      console.error('❌ instant finalize hatası:', e);
+      return res.status(500).render('error', { message: 'Sipariş oluşturulamadı: ' + e.message, status: 500 });
+    }
+    writeCart(res, []);
+    clearCoupon(res);
+    return res.redirect('/odeme/basarili');
+  }
+
+  // manual + instant kapalı -> eski pending akış (admin onayı gerekli)
   const ref = 'RM-' + Date.now().toString(36).toUpperCase();
   let orderId;
   try {
@@ -171,7 +188,7 @@ router.get('/odeme/beklemede/:id', requireAuth, async (req, res) => {
   }
   if (!o) return res.redirect('/siparislerim');
 
-  // Eğer sipariş zaten paid ise direkt kütüphaneye yönlendir (tekrar ödeme ekranı gösterme)
+  // Eğer sipariş zaten paid ise direkt kütüphaneye yönlendir
   if (o.status === 'paid') {
     return res.redirect('/profil/kutuphanem');
   }
@@ -191,30 +208,47 @@ router.get('/odeme/beklemede/:id', requireAuth, async (req, res) => {
   });
 });
 
-// Ödemeyi Yaptım Bildirimi (Admin Bildir) - manual_notified yap
+// Ödemeyi Yaptım Bildirimi - manual_notified yap ve INSTANT ise kütüphaneye de ekle
 router.post('/odeme/beklemede/:id/bildir', requireAuth, async (req, res) => {
   const orderId = Number(req.params.id);
+  const instantDelivery = process.env.INSTANT_DELIVERY !== 'false';
+  const cli = await db.connect();
   try {
-    // Sadece kendi pending siparişini bildirebilir (admin istisna)
-    const cond = req.user.role === 'admin' ? '' : ' AND user_id=$2 AND status=\'pending\'';
-    const params = req.user.role === 'admin' ? [orderId] : [orderId, req.user.id];
+    await cli.query('BEGIN');
     const q = req.user.role === 'admin'
-      ? `UPDATE orders SET payment_provider='manual_notified' WHERE id=$1 AND status='pending'`
-      : `UPDATE orders SET payment_provider='manual_notified' WHERE id=$1 AND user_id=$2 AND status='pending'`;
-    const r = await db.query(q, params);
-    if (r.rowCount) console.log(`📢 Sipariş #${orderId} için ödeme bildirildi (user ${req.user.email})`);
+      ? `SELECT id, user_id, status FROM orders WHERE id=$1 FOR UPDATE`
+      : `SELECT id, user_id, status FROM orders WHERE id=$1 AND user_id=$2 FOR UPDATE`;
+    const params = req.user.role === 'admin' ? [orderId] : [orderId, req.user.id];
+    const order = (await cli.query(q, params)).rows[0];
+    if (order && order.status === 'pending') {
+      await cli.query(`UPDATE orders SET payment_provider='manual_notified' WHERE id=$1`, [orderId]);
+      console.log(`📢 Sipariş #${orderId} için ödeme bildirildi (user ${req.user.email})`);
+      // INSTANT ise hemen kütüphaneye ekle
+      if (instantDelivery) {
+        await cli.query(`UPDATE orders SET status='paid' WHERE id=$1`, [orderId]);
+        const itemsRes = await cli.query(`SELECT game_id FROM order_items WHERE order_id=$1`, [orderId]);
+        for (const item of itemsRes.rows) {
+          await cli.query(`INSERT INTO user_library (user_id, game_id) VALUES ($1,$2) ON CONFLICT (user_id, game_id) DO NOTHING`, [order.user_id, item.game_id]);
+        }
+        console.log(`⚡ Bildirim sonrası INSTANT: Sipariş #${orderId} otomatik onaylandı, ${itemsRes.rows.length} oyun eklendi`);
+      }
+    }
+    await cli.query('COMMIT');
   } catch (e) {
+    await cli.query('ROLLBACK');
     console.error('Ödeme bildirim hatası:', e.message);
+  } finally {
+    cli.release();
   }
+  // Instant ise direkt kütüphaneye git
+  if (instantDelivery) return res.redirect('/profil/kutuphanem');
   res.redirect('/odeme/beklemede/' + orderId);
 });
 
 // Hızlı Sipariş Onaylama (Admin veya kendi siparişini test amaçlı onaylama)
-// Güvenlik: sadece sipariş sahibi veya admin onaylayabilir
 router.post('/odeme/beklemede/:id/hizli-onay', requireAuth, async (req, res) => {
   const orderId = Number(req.params.id);
   
-  // Yetki kontrolü: sipariş sahibi mi admin mi?
   let orderCheck;
   if (req.user.role === 'admin') {
     orderCheck = (await db.query(`SELECT id, user_id, status FROM orders WHERE id=$1`, [orderId])).rows[0];
@@ -286,15 +320,13 @@ router.get('/odeme/sonuc', requireAuth, async (req, res) => {
   res.render('error', { message: 'Ödeme tamamlanamadı.', status: 400 });
 });
 
-// Pending sipariş oluştur — user_library'e EKLEME YAPMA (admin onayı bekler)
+// Pending sipariş oluştur — sadece admin onayı kapalı iken kullanılır
 async function createPendingOrder(userId, games, total, provider, ref, coupon) {
   const cli = await db.connect();
   try {
     await cli.query('BEGIN');
     const couponCode = coupon?.code || null;
     const discountAmount = coupon ? (coupon.discount_amount || 0) : 0;
-    // discount_amount kolonunu da yaz (hesaplanan indirim) - eğer sadece yüzdeli kupon ise hesaplanan discount olarak da yazılabilir
-    // Burada total zaten indirim uygulanmış hal
     const o = await cli.query(
       'INSERT INTO orders (user_id, total_amount, status, payment_provider, payment_ref, coupon_code, discount_amount) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id',
       [userId, total, 'pending', provider, ref, couponCode, discountAmount]
@@ -327,7 +359,6 @@ async function finalizeOrder(userId, games, total, provider, ref, coupon) {
     const orderId = o.rows[0].id;
     for (const g of games) {
       await cli.query('INSERT INTO order_items (order_id, game_id, price_at_purchase) VALUES ($1,$2,$3)', [orderId, g.id, g.price]);
-      // FIX: ON CONFLICT hedefi explicit
       await cli.query('INSERT INTO user_library (user_id, game_id) VALUES ($1,$2) ON CONFLICT (user_id, game_id) DO NOTHING', [userId, g.id]);
     }
     await cli.query('COMMIT');
