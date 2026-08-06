@@ -29,6 +29,8 @@
       <div class="req-item"><span>📥 Teslimat:</span> Otomatik Kütüphanem İndirmesi (.zip)</div>
     </div>
 
+    <a id="modalExternalBtn" class="btn big success-btn" href="#" target="_blank" style="display:none;width:100%;margin-bottom:12px">🛍️ İtemSatış / Kredi Kartı İle Satın Al ➔</a>
+
     <div style="display:flex;gap:12px;flex-wrap:wrap">
       <form id="modalCartForm" method="post" action="/sepet/ekle" style="flex:1">
         <input type="hidden" name="game_id" id="modalGameId" value="">
@@ -49,6 +51,14 @@ function openGameModal(game) {
   document.getElementById('modalNode').textContent = 'Node ' + (game.node_version || '18+');
   document.getElementById('modalDesc').textContent = game.description || 'Bu interaktif oyun canlı yayınlarınızda chat etkileşimini ve hediye katılımını artırmak için tasarlanmıştır.';
   document.getElementById('modalDirectLink').href = '/oyunlar/' + (game.slug || '');
+
+  var extBtn = document.getElementById('modalExternalBtn');
+  if (game.external_buy_url && String(game.external_buy_url).trim() !== '') {
+    extBtn.href = game.external_buy_url;
+    extBtn.style.display = 'inline-flex';
+  } else {
+    extBtn.style.display = 'none';
+  }
 
   var img = document.getElementById('modalCover');
   var ph = document.getElementById('modalCoverPlaceholder');

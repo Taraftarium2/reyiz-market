@@ -100,8 +100,7 @@
   </a>
   <button class="burger" id="burgerBtn" aria-label="Menüyü Aç/Kapat">☰</button>
   <nav class="links" id="navLinks">
-    <a href="/oyunlar">🎮 Oyunlar</a>
-    <a href="/sepet">🛒 (<%= cartCount %>)</a>
+    <a href="/sepet" class="cart-nav-badge" id="navCartBadge">🛒 Sepet <span class="cart-count-pill" id="navCartCount"><%= cartCount %></span></a>
     <% if (user) { %>
       <a href="/siparislerim">📦 Siparişlerim</a>
       <a href="/profil/kutuphanem">📚 Kütüphanem</a>
