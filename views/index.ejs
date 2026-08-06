@@ -1,41 +1,56 @@
 <%- include('partials/header') %>
 
 <!-- HERO SECTION -->
-<section class="hero">
+<section class="hero" style="padding: 60px 20px 40px; text-align: center; position: relative;">
   <div class="hero-glow-1"></div>
   <div class="hero-glow-2"></div>
-  <div class="hero-badge">🔥 TikTok LIVE İnteraktif Oyun Pazarı</div>
-  <h1>Yayınını <span class="grad">Canlı Tut</span>,<br>Hediyeleri Katla 🚀</h1>
-  <p class="hero-sub">Reyiz Market, TikTok LIVE yayıncıları için Node.js tabanlı, chat ve hediye tetiklemeli interaktif oyunların dijital pazarı. Hemen satın al, Kütüphanenden tek tıkla indir!</p>
-  <div class="cta">
-    <a class="btn big" href="/oyunlar">🛍️ Oyun Mağazasına Git</a>
-    <a class="btn big ghost" href="#nasil">⚡ Nasıl Çalışır?</a>
+  <div class="hero-badge" style="display:inline-flex; align-items:center; gap:8px; padding:6px 16px; border-radius:30px; background:rgba(124,58,237,0.15); border:1px solid rgba(167,139,250,0.3); color:#c4b5fd; font-size:0.85rem; font-weight:700; margin-bottom:20px;">
+    🔥 TikTok LIVE Canlı Yayın İnteraktif Oyun Pazarı
+  </div>
+  <h1 style="font-size: 2.8rem; font-weight: 900; line-height: 1.2; margin-bottom: 16px; letter-spacing: -0.02em;">
+    Yayınını <span class="grad">Canlı Tut</span>, Chat & Hediyelerle <br>Kazancını 10'a Katla! 🚀
+  </h1>
+  <p class="hero-sub" style="max-width: 720px; margin: 0 auto 28px; font-size: 1.1rem; color: var(--muted); line-height: 1.6;">
+    TikTok LIVE yayıncıları için özel olarak geliştirilmiş chat ve hediye etkileşimli interaktif oyun yazılımları. 
+    Ödemeni yap, <b style="color:var(--text)">Kütüphanenden .ZIP dosyanı anında indir</b> ve yayınına başla!
+  </p>
+
+  <div class="cta" style="display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-bottom: 32px;">
+    <a class="btn big" href="/oyunlar" style="font-size: 1.05rem; padding: 14px 28px; border-radius: 12px; font-weight: 800; background: linear-gradient(135deg, #7c3aed, #ea580c); color: #fff;">🎮 Oyun Mağazasına Git →</a>
+    <a class="btn big ghost" href="/rehber" style="font-size: 1.05rem; padding: 14px 28px; border-radius: 12px; font-weight: 700; border: 1px solid var(--border2); color: var(--text);">⚡ OBS Kurulum Rehberi</a>
+  </div>
+
+  <!-- HIGHLIGHT BADGES -->
+  <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-bottom: 40px; font-size: 0.88rem; color: var(--muted);">
+    <span style="display:flex; align-items:center; gap:6px;">⚡ <b>Anında .ZIP İndirme</b></span>
+    <span style="display:flex; align-items:center; gap:6px;">🛡️ <b>%100 OBS & TikTok Studio Uyumlu</b></span>
+    <span style="display:flex; align-items:center; gap:6px;">🎁 <b>Tek Seferlik Ödeme (Ömür Boyu)</b></span>
   </div>
 
   <!-- CANLI YAYIN SİMÜLATÖRÜ -->
   <div class="live-sim-wrap">
     <div class="live-sim-header">
-      <div><span class="live-dot"></span>CANLI DEMO — TikTok Chat Entegrasyonu</div>
+      <div><span class="live-dot"></span>CANLI EKRAN SİMÜLATÖRÜ — TikTok Chat Entegrasyonu</div>
       <div style="color:var(--muted);font-size:.78rem">Gelen Hediye / Chat Tetikleyici</div>
     </div>
     <div class="live-sim-body">
       <div class="sim-screen">
-        <div style="font-size:3rem;margin-bottom:8px">🎨</div>
-        <div class="sim-screen-title">Ne Çizdim? (Canlı Şov)</div>
-        <div class="sim-screen-sub">Tebrikler! @Ahmet 100 Puan Kazandı 🎉</div>
+        <div style="font-size:3.5rem;margin-bottom:8px">🎯</div>
+        <div class="sim-screen-title">Hedef Vurma Oyunu (Canlı Şov)</div>
+        <div class="sim-screen-sub">Tebrikler! @Ahmet Hedefi Vurdu 🎉 (+100 Puan)</div>
       </div>
       <div class="sim-chat">
         <div class="chat-msg">
           <span class="chat-user">@Mehmet:</span>
-          <span class="chat-text">Araba mı çizdin?</span>
+          <span class="chat-text">Sol üstteki hedefi vur!</span>
         </div>
         <div class="chat-msg">
           <span class="chat-user">@Zeynep:</span>
-          <span class="gift-text">🎁 5x Rose gönderdi! (+5 Hız)</span>
+          <span class="gift-text">🎁 5x Rose gönderdi! (+5 Hızlandırıcı)</span>
         </div>
         <div class="chat-msg">
           <span class="chat-user">@Ahmet:</span>
-          <span class="chat-text">BİLGİSAYAR!</span>
+          <span class="chat-text">BOMBA AT!</span>
         </div>
         <div class="chat-msg">
           <span class="chat-user">@Selin:</span>
@@ -49,16 +64,52 @@
 <!-- ISTATISTIK BARI -->
 <div class="stats-bar">
   <div><b>50+</b><span>İnteraktif Oyun</span></div>
-  <div><b>10K+</b><span>Aktif Yayıncı</span></div>
+  <div><b>10.000+</b><span>Aktif Yayıncı</span></div>
   <div><b>24/7</b><span>Otomatik Teslimat</span></div>
   <div><b>%100</b><span>Süresiz Lisans</span></div>
 </div>
 
+<!-- 🚀 3 ADIMDA ÇALIŞMA MANTIĞI (SİSTEM NASIL ÇALIŞIR?) -->
+<section class="section" id="nasil" style="padding: 50px 20px;">
+  <div class="section-title" style="text-align: center; margin-bottom: 36px;">
+    <h2 style="font-size: 2rem; font-weight: 800;">🚀 3 Kolay Adımda Canlı Yayına Başla</h2>
+    <p style="color: var(--muted);">Karmaşık teknik işlemler yok — saniyeler içinde yayına hazır olursunuz</p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; max-width: 1050px; margin: 0 auto;">
+    
+    <div style="background: var(--card); border: 1px solid var(--border2); border-radius: 16px; padding: 28px; position: relative; text-align: left;">
+      <div style="font-size: 2rem; font-weight: 900; color: #a78bfa; margin-bottom: 12px;">01.</div>
+      <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 8px;">🎮 Oyununu Seç & İndir</h3>
+      <p style="color: var(--muted); font-size: 0.92rem; line-height: 1.6;">
+        Mağazadan dilediğin oyunu sepete ekle ve ödemeni tamamla. Dosya anında <b>Kütüphanem</b> sayfana tanımlanır ve `.zip` olarak bilgisayarına inersin.
+      </p>
+    </div>
+
+    <div style="background: var(--card); border: 1px solid var(--border2); border-radius: 16px; padding: 28px; position: relative; text-align: left;">
+      <div style="font-size: 2rem; font-weight: 900; color: #f97316; margin-bottom: 12px;">02.</div>
+      <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 8px;">🛠️ OBS Studio'ya Ekle</h3>
+      <p style="color: var(--muted); font-size: 0.92rem; line-height: 1.6;">
+        İndirdiğin klasördeki `.env` dosyasına TikTok kullanıcı adını yaz ve `npm start` yap. OBS Studio'da <b>Tarayıcı Kaynağı (Browser Source)</b> olarak ekle.
+      </p>
+    </div>
+
+    <div style="background: var(--card); border: 1px solid var(--border2); border-radius: 16px; padding: 28px; position: relative; text-align: left;">
+      <div style="font-size: 2rem; font-weight: 900; color: #22c55e; margin-bottom: 12px;">03.</div>
+      <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 8px;">🎁 Yayınını Başlat & Kazan</h3>
+      <p style="color: var(--muted); font-size: 0.92rem; line-height: 1.6;">
+        Canlı yayınını açtığında izleyicilerin attığı her hediye ve chat mesajı ekrandaki oyunu canlı olarak tetikler. İzlenme ve hediye patlamasını izle!
+      </p>
+    </div>
+
+  </div>
+</section>
+
 <!-- ÖNE ÇIKAN OYUNLAR KATALOĞU -->
 <section class="section" id="oyunlar">
   <div class="section-title">
-    <h2>🔥 Çok Satılan İnteraktif Oyunlar</h2>
-    <p>TikTok LIVE yayıncılarının izlenme ve hediye rekorları kıran en popüler yazılımları</p>
+    <h2>🔥 En Popüler Canlı Yayın Oyunları</h2>
+    <p>TikTok LIVE yayıncılarının izlenme ve hediye rekorları kıran en popüler interaktif oyunları</p>
   </div>
   <div class="grid">
     <% if (typeof featured !== 'undefined' && featured && featured.length > 0) { %>
@@ -69,106 +120,6 @@
   </div>
   <div class="center" style="margin-top:36px">
     <a class="btn big ghost" href="/oyunlar">Tüm Oyun Kataloğunu Gör (50+ Oyun) →</a>
-  </div>
-</section>
-
-<!-- NEDEN REYIZ MARKET (AVANTAJLAR) -->
-<section class="section dark-bg">
-  <div class="section-title">
-    <h2>💡 Neden Reyiz Market?</h2>
-    <p>Yayıncılar için geliştirilmiş güvenli ve hızlı dijital teslimat altyapısı</p>
-  </div>
-  <div class="features-grid">
-    <div class="feature-card">
-      <div class="feature-icon">⚡</div>
-      <h3>Anında Kütüphanende</h3>
-      <p>Ödemen onaylandığı an oyun zip dosyası profilindeki Kütüphanem sayfasına tanımlanır.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🛠️</div>
-      <h3>1 Dakikada Kurulum</h3>
-      <p>Node.js ortamına uyumlu hazır paketler. `npm start` yap, yayınını hemen bağla.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🛡️</div>
-      <h3>%100 Virüssüz & Güvenli</h3>
-      <p>Tüm kaynak kodlar ekibimiz tarafından incelenir, temiz ve açık kod yapısıyla teslim edilir.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">📈</div>
-      <h3>Etkileşim & Hediye Patlaması</h3>
-      <p>Chat katılımını artırır, izleyicileri hediye atmaya teşvik ederek kazancını yükseltir.</p>
-    </div>
-  </div>
-</section>
-
-<!-- NASIL ÇALIŞIR (ADIMLAR) -->
-<section class="section" id="nasil">
-  <div class="section-title">
-    <h2>🚀 4 Adımda Canlı Yayına Başla</h2>
-    <p>Karmaşık ayarlar yok — hızlı ve pratik adımlar</p>
-  </div>
-  <div class="steps-grid">
-    <div class="step">
-      <div class="step-num">1</div>
-      <h4>Hesap Oluştur</h4>
-      <p>30 saniyede ücretsiz üye ol.</p>
-    </div>
-    <div class="step">
-      <div class="step-num">2</div>
-      <h4>Oyununu Seç</h4>
-      <p>Katalogdan hedefine uygun oyunu sepete ekle.</p>
-    </div>
-    <div class="step">
-      <div class="step-num">3</div>
-      <h4>Güvenli Ödeme</h4>
-      <p>Banka Havale / EFT ile siparişini oluştur.</p>
-    </div>
-    <div class="step">
-      <div class="step-num">4</div>
-      <h4>İndir & Yayınla</h4>
-      <p>Admin onayından sonra zip'i indir ve canlıya başla!</p>
-    </div>
-  </div>
-</section>
-
-<!-- YAYINCI YORUMLARI (SOCIAL PROOF) -->
-<section class="section dark-bg">
-  <div class="section-title">
-    <h2>💬 Yayıncılar Ne Diyor?</h2>
-    <p>Reyiz Market kullanan TikTok canlı yayıncılarının deneyimleri</p>
-  </div>
-  <div class="reviews-grid">
-    <div class="review-card">
-      <div class="review-quote">"Kelime Savaşı oyununu aldığımdan beri yayınlarıma katılım 4 katına çıktı. Hediyeler havada uçuşuyor, harika altyapı!"</div>
-      <div class="reviewer-info">
-        <div class="reviewer-avatar">R</div>
-        <div>
-          <div class="reviewer-name">@reyiz_streamer</div>
-          <div class="reviewer-sub">TikTok Yayıncısı (65K Takipçi)</div>
-        </div>
-      </div>
-    </div>
-    <div class="review-card">
-      <div class="review-quote">"Ödemeyi yaptıktan 10 dakika sonra admin onayladı. Zip dosyasını indirip direkt çalıştırdım. Kodlar tertemiz."</div>
-      <div class="reviewer-info">
-        <div class="reviewer-avatar">G</div>
-        <div>
-          <div class="reviewer-name">@game_master_tr</div>
-          <div class="reviewer-sub">TikTok Yayıncısı (120K Takipçi)</div>
-        </div>
-      </div>
-    </div>
-    <div class="review-card">
-      <div class="review-quote">"Çizim oyunu yayınlarımı canlı tutuyor. İzleyiciler hiç ayrılmıyor. Kesinlikle tavsiye ederim."</div>
-      <div class="reviewer-info">
-        <div class="reviewer-avatar">T</div>
-        <div>
-          <div class="reviewer-name">@tiktok_canlishow</div>
-          <div class="reviewer-sub">TikTok Yayıncısı (38K Takipçi)</div>
-        </div>
-      </div>
-    </div>
   </div>
 </section>
 
@@ -184,21 +135,21 @@
         <span>Oyunları yayınımda nasıl çalıştırırım?</span>
         <span>▼</span>
       </div>
-      <div class="faq-answer">Satın aldığınız oyun zip dosyasını indirip bilgisayarınızda çıkardıktan sonra `npm install` ve `npm start` komutuyla 1 dakikada çalıştırabilir, OBS/Streamlabs üzerinden yayına verebilirsiniz.</div>
+      <div class="faq-answer">Satın aldığınız oyun zip dosyasını indirip bilgisayarınızda çıkardıktan sonra .env dosyasına TikTok adınızı yazıp npm start yapın. OBS Studio -> Tarayıcı Kaynağı ekle diyerek yayına bağlayabilirsiniz.</div>
     </div>
     <div class="faq-item" onclick="this.classList.toggle('open')">
       <div class="faq-question">
         <span>Ödeme sonrası dosyalar ne zaman teslim edilir?</span>
         <span>▼</span>
       </div>
-      <div class="faq-answer">Havale/EFT ödemeniz onaylandıktan sonra oyun otomatik olarak "Kütüphanem" sayfanıza eklenir ve dilediğiniz zaman bilgisayarınıza indirebilirsiniz.</div>
+      <div class="faq-answer">Ödemeniz onaylandığı an oyun zip dosyası "Kütüphanem" sayfanıza otomatik tanımlanır. Tek tıkla doğrudan bilgisayarınıza indirebilirsiniz.</div>
     </div>
     <div class="faq-item" onclick="this.classList.toggle('open')">
       <div class="faq-question">
         <span>Satın aldığım oyunları tek seferlik mi ödüyorum?</span>
         <span>▼</span>
       </div>
-      <div class="faq-answer">Evet! Reyiz Market'teki tüm oyunlar tek seferlik ödemelidir. Aylık veya yıllık abonelik ücreti yoktur.</div>
+      <div class="faq-answer">Evet! Reyiz Market'teki tüm oyunlar tek seferlik ödemelidir. Aylık veya yıllık abonelik ücreti yoktur. Ömür boyu sizindir.</div>
     </div>
   </div>
 </section>
