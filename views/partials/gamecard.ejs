@@ -5,16 +5,22 @@
     <% } else { %>
       <div class="cover-placeholder">🎮</div>
     <% } %>
-    <span class="tag-chip"><%= game.tag || 'Oyun' %></span>
-    <% if (game.featured) { %><span class="featured-chip">⭐ Öne Çıkan</span><% } %>
+    <span class="tag-chip"><%= game.tag || 'Mini Oyun' %></span>
+    <% if (game.featured) { %><span class="featured-chip">🔥 Çok Satan</span><% } %>
   </div>
   <div class="card-body">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div class="rating-stars">★★★★★ <span class="rating-count">(4.9)</span></div>
+      <span class="indirme-badge">Node <%= game.node_version || '18+' %></span>
+    </div>
     <h3><%= game.title %></h3>
     <p><%= (game.description || '').slice(0, 85) %><% if ((game.description||'').length > 85) { %>…<% } %></p>
     <div class="card-foot">
-      <span class="price">₺<%= Number(game.price).toFixed(0) %></span>
-      <div style="display:flex;gap:8px;align-items:center">
-        <a class="btn ghost sm" href="/oyunlar/<%= game.slug %>">İncele</a>
+      <div>
+        <span class="price">₺<%= Number(game.price).toFixed(0) %></span>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <a class="btn ghost sm" href="/oyunlar/<%= game.slug %>">Detay</a>
         <form method="post" action="/sepet/ekle" style="margin:0">
           <input type="hidden" name="game_id" value="<%= game.id %>">
           <button class="btn sm">+ Sepet</button>
