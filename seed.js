@@ -3,15 +3,12 @@ const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 const db = require('./db');
-const { STORAGE_DIR } = require('./storage');
+const storage = require('./storage');
 
 const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
 
 async function main() {
-  const targetStorageDir = (STORAGE_DIR && String(STORAGE_DIR).trim() !== '') ? STORAGE_DIR : path.join(__dirname, 'storage');
-  if (!fs.existsSync(targetStorageDir)) {
-    try { fs.mkdirSync(targetStorageDir, { recursive: true }); } catch (e) { if (e.code !== 'EEXIST') throw e; }
-  }
+  fs.mkdirSync(storage.STORAGE_DIR, { recursive: true });
   await db.query(schema);
 
   // Admin hesabı
@@ -37,18 +34,20 @@ async function main() {
   for (const s of sample) {
     const found = await db.query('SELECT id FROM games WHERE slug=$1', [s.slug]);
     if (found.rows.length) continue;
-    const fkey = 'game_' + s.slug + '.zip';
-    fs.writeFileSync(
-      path.join(STORAGE_DIR, fkey),
-      'REYIZ MARKET — yer tutucu oyun dosyası.\nGerçek Node.js oyun paketini admin panelinden yükleyin: ' + s.slug + '\n'
+    const fkey = 'games/' + s.slug + '.zip';
+    const placeholder = Buffer.from(
+      'REYIZ MARKET — yer tutucu oyun dosyası.\n' +
+      'Gerçek Node.js oyun paketini admin panelinden yükleyin: ' + s.slug + '\n' +
+      'Depolama modu: ' + (storage.s3 ? 'Cloudflare R2' : 'Local') + '\n'
     );
+    await storage.uploadFile(placeholder, fkey, 'application/zip');
     await db.query(
       'INSERT INTO games (title,slug,description,price,file_key,node_version,tag,featured) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
       [s.title, s.slug, s.desc, s.price, fkey, '18', s.tag, s.featured]
     );
   }
 
-  console.log('✅ Tablolar kuruldu, örnek oyunlar eklendi. Hazır!');
+  console.log('✅ Tablolar kuruldu, örnek oyunlar eklendi. Depolama:', storage.s3 ? 'Cloudflare R2' : 'Local');
   process.exit(0);
 }
 
