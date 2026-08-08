@@ -1,0 +1,10 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "nvidia": {
+      "options": {
+        "baseURL": "https://integrate.api.nvidia.com/v1"
+      }
+    }
+  }
+}

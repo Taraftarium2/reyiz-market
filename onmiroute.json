@@ -1,0 +1,7 @@
+{
+  "title": "AntiGravity Gemini",
+  "provider": "openai",
+  "model": "gemini-1.5-flash",
+  "apiKey": "sk-5b40c3fd9dafbe3a-9ef220-d53e2e30",
+  "apiBase": "http://localhost:20128/v1"
+}

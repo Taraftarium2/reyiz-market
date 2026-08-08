@@ -1,67 +1,70 @@
--- Users Table
 CREATE TABLE IF NOT EXISTS users (
-    id SERIAL PRIMARY KEY,
-    username VARCHAR(50) UNIQUE NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    role VARCHAR(20) DEFAULT 'user', -- 'user' or 'admin'
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+  id SERIAL PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  name TEXT,
+  role TEXT NOT NULL DEFAULT 'user',
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Games Table
 CREATE TABLE IF NOT EXISTS games (
-    id SERIAL PRIMARY KEY,
-    title VARCHAR(150) NOT NULL,
-    slug VARCHAR(150) UNIQUE NOT NULL,
-    description TEXT,
-    price DECIMAL(10,2) NOT NULL,
-    discount_price DECIMAL(10,2),
-    cover_image VARCHAR(255),
-    banner_image VARCHAR(255),
-    developer VARCHAR(100),
-    publisher VARCHAR(100),
-    release_date DATE,
-    genre VARCHAR(100),
-    is_featured BOOLEAN DEFAULT false,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+  id SERIAL PRIMARY KEY,
+  title TEXT NOT NULL,
+  slug TEXT UNIQUE NOT NULL,
+  description TEXT,
+  price NUMERIC(10,2) NOT NULL DEFAULT 0,
+  cover_image_url TEXT,
+  file_key TEXT NOT NULL,
+  node_version TEXT DEFAULT '18',
+  tag TEXT DEFAULT 'Mini Oyun',
+  featured BOOLEAN DEFAULT false,
+  external_buy_url TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Game Keys Table (Keys stock for purchased games)
-CREATE TABLE IF NOT EXISTS game_keys (
-    id SERIAL PRIMARY KEY,
-    game_id INT REFERENCES games(id) ON DELETE CASCADE,
-    license_key VARCHAR(100) UNIQUE NOT NULL,
-    is_used BOOLEAN DEFAULT false,
-    order_id INT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
--- Orders Table
 CREATE TABLE IF NOT EXISTS orders (
-    id SERIAL PRIMARY KEY,
-    user_id INT REFERENCES users(id) ON DELETE CASCADE,
-    total_amount DECIMAL(10,2) NOT NULL,
-    status VARCHAR(20) DEFAULT 'completed', -- 'pending', 'completed', 'cancelled'
-    payment_method VARCHAR(50) DEFAULT 'credit_card',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+  id SERIAL PRIMARY KEY,
+  user_id INT REFERENCES users(id),
+  total_amount NUMERIC(10,2),
+  status TEXT DEFAULT 'pending',
+  payment_provider TEXT,
+  payment_ref TEXT,
+  coupon_code TEXT,
+  discount_amount NUMERIC(10,2) DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Order Items Table
 CREATE TABLE IF NOT EXISTS order_items (
-    id SERIAL PRIMARY KEY,
-    order_id INT REFERENCES orders(id) ON DELETE CASCADE,
-    game_id INT REFERENCES games(id) ON DELETE SET NULL,
-    price DECIMAL(10,2) NOT NULL,
-    license_key VARCHAR(100)
+  id SERIAL PRIMARY KEY,
+  order_id INT REFERENCES orders(id),
+  game_id INT REFERENCES games(id),
+  price_at_purchase NUMERIC(10,2)
 );
 
--- User Library Table
 CREATE TABLE IF NOT EXISTS user_library (
-    id SERIAL PRIMARY KEY,
-    user_id INT REFERENCES users(id) ON DELETE CASCADE,
-    game_id INT REFERENCES games(id) ON DELETE CASCADE,
-    order_id INT REFERENCES orders(id) ON DELETE SET NULL,
-    license_key VARCHAR(100),
-    acquired_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(user_id, game_id)
+  id SERIAL PRIMARY KEY,
+  user_id INT REFERENCES users(id),
+  game_id INT REFERENCES games(id),
+  purchased_at TIMESTAMPTZ DEFAULT now(),
+  download_count INT DEFAULT 0,
+  UNIQUE (user_id, game_id)
+);
+
+CREATE TABLE IF NOT EXISTS coupons (
+  id SERIAL PRIMARY KEY,
+  code TEXT UNIQUE NOT NULL,
+  discount_percent INT DEFAULT 0,
+  discount_amount NUMERIC(10,2) DEFAULT 0,
+  active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS reviews (
+  id SERIAL PRIMARY KEY,
+  game_id INT REFERENCES games(id),
+  user_id INT REFERENCES users(id),
+  user_name TEXT,
+  rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  comment TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
 );
