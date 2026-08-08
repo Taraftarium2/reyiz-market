@@ -1,26 +1,159 @@
-    </main>
-    <footer class="footer">
-        <div class="container footer-container">
-            <div class="footer-col">
-                <h3>REYIZ<span class="highlight">MARKET</span></h3>
-                <p>Türkiye'nin en hızlı ve güvenilir dijital oyun ve lisans anahtarı platformu.</p>
-            </div>
-            <div class="footer-col">
-                <h4>Hızlı Bağlantılar</h4>
-                <ul>
-                    <li><a href="/">Anasayfa</a></li>
-                    <li><a href="/games">Tüm Oyunlar</a></li>
-                    <li><a href="/auth/login">Giriş Yap</a></li>
-                </ul>
-            </div>
-            <div class="footer-col">
-                <h4>Güvenli Ödeme</h4>
-                <p><i class="fa-solid fa-lock"></i> 256-bit SSL Şifreleme ile tam koruma.</p>
-            </div>
-        </div>
-        <div class="footer-bottom container">
-            <p>&copy; 2026 Reyiz Market. Tüm hakları saklıdır.</p>
-        </div>
-    </footer>
+</main>
+<footer class="footer">
+  <div class="footer-logo">⚡ Reyiz<span>Market</span></div>
+  <div class="footer-links">
+    <a href="/oyunlar">Oyunlar</a>
+    <a href="/giris">Giriş</a>
+    <a href="/kayit">Kayıt</a>
+  </div>
+  <div>© 2026 Reyiz Market · reyizmarket.click</div>
+</footer>
+<%- include('game_modal') %>
+
+<!-- GLOBAL SEPETE EKLEME & UÇAN PARÇACIK ANİMASYON SCRIPT'I -->
+<script>
+(function() {
+  document.addEventListener('submit', function(e) {
+    var form = e.target;
+    if (form && form.getAttribute && form.getAttribute('action') === '/sepet/ekle') {
+      e.preventDefault();
+      var btn = form.querySelector('button[type="submit"]') || form.querySelector('button');
+      var origText = btn ? btn.innerHTML : '';
+      var gameIdInput = form.querySelector('input[name="game_id"]');
+      var gameId = gameIdInput ? gameIdInput.value : '';
+
+      // Buton başarı durumu ve yeşil parıltı
+      if (btn) {
+        btn.classList.add('btn-added');
+        btn.innerHTML = '✓ Sepete Eklendi!';
+      }
+
+      // AJAX isteğiyle sepete ekle
+      fetch('/sepet/ekle', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json'
+        },
+        body: 'game_id=' + encodeURIComponent(gameId)
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data && data.success) {
+          // Navbardaki sepet sayacını güncelle & zıplat
+          var counter = document.getElementById('navCartCount');
+          if (counter) {
+            counter.textContent = data.count;
+            counter.classList.remove('bump');
+            void counter.offsetWidth;
+            counter.classList.add('bump');
+          }
+
+          // Uçan +1 🛒 parçacık animasyonu
+          if (btn) {
+            var rect = btn.getBoundingClientRect();
+            var p = document.createElement('div');
+            p.className = 'cart-fly-particle';
+            p.textContent = '+1 🛒';
+            p.style.left = (rect.left + rect.width / 2) + 'px';
+            p.style.top = rect.top + 'px';
+
+            var navCart = document.getElementById('navCartBadge');
+            var targetX = '0px', targetY = '-120px';
+            if (navCart) {
+              var navRect = navCart.getBoundingClientRect();
+              targetX = (navRect.left - rect.left) + 'px';
+              targetY = (navRect.top - rect.top) + 'px';
+            }
+            p.style.setProperty('--fly-x', targetX);
+            p.style.setProperty('--fly-y', targetY);
+
+            document.body.appendChild(p);
+            setTimeout(function() { p.remove(); }, 750);
+          }
+        }
+      })
+      .catch(function(err) { console.error('Sepete ekleme hatası:', err); });
+
+      // 2.2 saniye sonra butonu eski haline çevir
+      setTimeout(function() {
+        if (btn) {
+          btn.classList.remove('btn-added');
+          btn.innerHTML = origText;
+        }
+      }, 2200);
+    }
+  });
+})();
+</script>
+
+<!-- FLOATING CANLI DESTEK WIDGET'I -->
+<div class="support-widget">
+  <a class="support-btn wa" href="https://wa.me/905000000000?text=Merhaba,%20Reyiz%20Market%20TikTok%20oyunları%20hakkında%20bilgi%20almak%20istiyorum." target="_blank" title="WhatsApp Canlı Destek">💬</a>
+  <a class="support-btn dc" href="https://discord.gg/" target="_blank" title="Discord Topluluğumuz">🎮</a>
+</div>
+
+<!-- CANLI SATIŞ BİLDİRİMİ POP-UP SCRIPT'I (SOCIAL PROOF) -->
+<script>
+(function() {
+  var salesData = [];
+  var index = 0;
+
+  function showNextToast() {
+    if (!salesData.length) return;
+    var item = salesData[index % salesData.length];
+    index++;
+
+    var toast = document.createElement('div');
+    toast.className = 'sales-toast';
+
+    var avatar = document.createElement('div');
+    avatar.className = 'sales-toast-avatar';
+    avatar.textContent = '⚡';
+
+    var body = document.createElement('div');
+    var line1 = document.createElement('div');
+    var strong = document.createElement('strong');
+    strong.style.color = 'var(--purple2)';
+    strong.textContent = item.name || '';
+    line1.appendChild(strong);
+    line1.appendChild(document.createTextNode(' az önce satın aldı:'));
+    var line2 = document.createElement('div');
+    line2.style.fontWeight = '700';
+    line2.style.color = 'var(--text)';
+    line2.textContent = (item.game || '') + ' ';
+    var timeSpan = document.createElement('span');
+    timeSpan.style.fontSize = '.75rem';
+    timeSpan.style.color = 'var(--muted)';
+    timeSpan.textContent = '(' + (item.time || '') + ')';
+    line2.appendChild(timeSpan);
+    body.appendChild(line1);
+    body.appendChild(line2);
+
+    toast.appendChild(avatar);
+    toast.appendChild(body);
+    document.body.appendChild(toast);
+
+    setTimeout(function() {
+      toast.style.transition = 'opacity .5s ease, transform .5s ease';
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(20px)';
+      setTimeout(function() { toast.remove(); }, 500);
+    }, 4500);
+  }
+
+  fetch('/api/recent-sales')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data && data.length) {
+        salesData = data;
+        setTimeout(showNextToast, 4000);
+        setInterval(showNextToast, 12000);
+      }
+    })
+    .catch(function(e) {});
+})();
+</script>
 </body>
 </html>
