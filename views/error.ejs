@@ -1,12 +1,14 @@
 <%- include('partials/header') %>
 
-<div class="container section">
-    <div class="empty-state">
-        <i class="fa-solid fa-triangle-exclamation fa-4x text-danger"></i>
-        <h2>Bir Hata Oluştu</h2>
-        <p><%= message || 'Beklenmeyen bir hata meydana geldi.' %></p>
-        <a href="/" class="btn btn-primary"><i class="fa-solid fa-house"></i> Anasayfaya Dön</a>
+<div class="success-wrap">
+  <div class="success-box" style="border-color:rgba(239,68,68,.3);box-shadow:0 0 50px rgba(239,68,68,.06)">
+    <div style="font-size:3rem;margin-bottom:16px"><%= status === 404 ? '🔍' : status === 403 ? '🚫' : '⚠️' %></div>
+    <h2 style="color:var(--red)">Hata <%= status %></h2>
+    <p><%= message %></p>
+    <div class="success-btns">
+      <a class="btn" href="/">Ana Sayfaya Dön</a>
     </div>
+  </div>
 </div>
 
 <%- include('partials/footer') %>

@@ -1,109 +1,475 @@
 <%- include('partials/header') %>
 
-<div class="container section">
-    <h1 class="page-title"><i class="fa-solid fa-shield-halved"></i> Yönetim Paneli</h1>
+<section class="section" style="max-width:1240px;margin:0 auto">
 
-    <div class="stats-row">
-        <div class="stat-card">
-            <h3>Toplam Oyun</h3>
-            <p class="stat-number"><%= stats.totalGames %></p>
-        </div>
-        <div class="stat-card">
-            <h3>Toplam Sipariş</h3>
-            <p class="stat-number"><%= stats.totalOrders %></p>
-        </div>
+  <% if (typeof msg !== 'undefined' && msg) { %>
+    <div class="alert alert-success" style="margin-bottom:20px"><%= msg %></div>
+  <% } %>
+
+  <!-- ADMIN PANELS ÜST BAR & STATUS -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:16px;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:20px 26px">
+    <div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <h2 style="font-size:1.5rem;font-weight:900">⚙ Reyiz Market Console</h2>
+        <span class="badge badge-paid" style="font-size:.78rem;padding:4px 10px">🟢 v2.5.0 Production Engine</span>
+      </div>
+      <p style="color:var(--muted);font-size:.85rem;margin-top:2px">Sipariş onayı, katalog yönetimi, promosyon kuponları ve yayıncı CRM paneli</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <a class="btn sm ghost" href="/profil/kutuphanem">📚 Kütüphanem</a>
+      <a class="btn sm" href="/admin" onclick="location.reload()">🔄 Yenile</a>
+    </div>
+  </div>
+
+  <!-- İSTATİSTİK KARTLARI (METRICS DASHBOARD) -->
+  <div class="stat-cards" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:18px;margin-bottom:32px">
+    
+    <div class="stat-card" style="background:var(--card);border:1px solid var(--border);border-radius:18px;padding:20px;position:relative;overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <span style="font-size:.85rem;color:var(--muted);font-weight:600">Toplam Gelir (Ciro)</span>
+        <div style="width:40px;height:40px;border-radius:12px;background:rgba(34,197,94,.15);color:#22c55e;display:flex;align-items:center;justify-content:center;font-size:1.2rem">💰</div>
+      </div>
+      <div style="font-size:1.6rem;font-weight:900;color:var(--text)">₺<%= Number(stats.totalRevenue).toLocaleString('tr-TR',{minimumFractionDigits:0}) %></div>
+      <div style="height:4px;background:linear-gradient(90deg, #22c55e, #16a34a);border-radius:2px;margin-top:12px"></div>
     </div>
 
-    <div class="admin-sections">
-        <!-- Oyun Ekleme Formu -->
-        <div class="admin-card">
-            <h2>Yeni Oyun Ekle</h2>
-            <form action="/admin/games/add" method="POST">
-                <div class="form-group">
-                    <label>Başlık</label>
-                    <input type="text" name="title" class="form-input" required>
-                </div>
-                <div class="form-group">
-                    <label>Açıklama</label>
-                    <textarea name="description" class="form-input" rows="3"></textarea>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Fiyat (₺)</label>
-                        <input type="number" step="0.01" name="price" class="form-input" required>
-                    </div>
-                    <div class="form-group">
-                        <label>İndirimli Fiyat (₺)</label>
-                        <input type="number" step="0.01" name="discount_price" class="form-input">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Görsel URL</label>
-                    <input type="text" name="cover_image" class="form-input" placeholder="https://...">
-                </div>
-                <div class="form-group">
-                    <label>Kategori (Tür)</label>
-                    <input type="text" name="genre" class="form-input" placeholder="Aksiyon, RPG, Spor">
-                </div>
-                <div class="form-group">
-                    <label><input type="checkbox" name="is_featured"> Öne Çıkarılan Oyun</label>
-                </div>
-                <button type="submit" class="btn btn-primary">Oyunu Kaydet</button>
-            </form>
-        </div>
-
-        <!-- Key Ekleme Formu -->
-        <div class="admin-card">
-            <h2>Stok Lisans Key Ekle</h2>
-            <form action="/admin/keys/add" method="POST">
-                <div class="form-group">
-                    <label>Oyun Seçin</label>
-                    <select name="game_id" class="form-select" required>
-                        <% games.forEach(g => { %>
-                            <option value="<%= g.id %>"><%= g.title %></option>
-                        <% }); %>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Lisans Anahtarı</label>
-                    <input type="text" name="license_key" class="form-input" required placeholder="XXXX-YYYY-ZZZZ-1234">
-                </div>
-                <button type="submit" class="btn btn-success">Key Ekle</button>
-            </form>
-        </div>
+    <% var pendingOrders = orders.filter(function(o){return o.status==='pending';}); %>
+    <div class="stat-card" style="background:var(--card);border:1px solid <%= pendingOrders.length > 0 ? '#fbbf24' : 'var(--border)' %>;border-radius:18px;padding:20px;position:relative;overflow:hidden;<%= pendingOrders.length > 0 ? 'box-shadow: 0 0 25px rgba(251,191,36,.2);' : '' %>">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <span style="font-size:.85rem;color:<%= pendingOrders.length > 0 ? '#fbbf24' : 'var(--muted)' %>;font-weight:600">Bekleyen Havale Onayı</span>
+        <div style="width:40px;height:40px;border-radius:12px;background:rgba(251,191,36,.15);color:#fbbf24;display:flex;align-items:center;justify-content:center;font-size:1.2rem">⏳</div>
+      </div>
+      <div style="font-size:1.6rem;font-weight:900;color:<%= pendingOrders.length > 0 ? '#fbbf24' : 'var(--text)' %>">
+        <%= stats.pendingCount %> Adet Sipariş
+      </div>
+      <div style="height:4px;background:linear-gradient(90deg, #fbbf24, #d97706);border-radius:2px;margin-top:12px"></div>
     </div>
 
-    <div class="admin-card mt-4">
-        <h2>Mevcut Oyunlar</h2>
-        <div class="table-responsive">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Başlık</th>
-                        <th>Kategori</th>
-                        <th>Fiyat</th>
-                        <th>İşlem</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <% games.forEach(g => { %>
-                        <tr>
-                            <td>#<%= g.id %></td>
-                            <td><%= g.title %></td>
-                            <td><%= g.genre %></td>
-                            <td>₺<%= parseFloat(g.price).toFixed(2) %></td>
-                            <td>
-                                <form action="/admin/games/delete/<%= g.id %>" method="POST" style="display:inline;">
-                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Silmek istediğinize emin misiniz?');">Sil</button>
-                                </form>
-                            </td>
-                        </tr>
-                    <% }); %>
-                </tbody>
+    <div class="stat-card" style="background:var(--card);border:1px solid var(--border);border-radius:18px;padding:20px;position:relative;overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <span style="font-size:.85rem;color:var(--muted);font-weight:600">Kayıtlı Yayıncı Üye</span>
+        <div style="width:40px;height:40px;border-radius:12px;background:rgba(139,92,246,.15);color:#a78bfa;display:flex;align-items:center;justify-content:center;font-size:1.2rem">👥</div>
+      </div>
+      <div style="font-size:1.6rem;font-weight:900;color:var(--text)"><%= stats.totalUsers %> Üye</div>
+      <div style="height:4px;background:linear-gradient(90deg, #8b5cf6, #ec4899);border-radius:2px;margin-top:12px"></div>
+    </div>
+
+    <div class="stat-card" style="background:var(--card);border:1px solid var(--border);border-radius:18px;padding:20px;position:relative;overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <span style="font-size:.85rem;color:var(--muted);font-weight:600">Toplam Sipariş</span>
+        <div style="width:40px;height:40px;border-radius:12px;background:rgba(249,115,22,.15);color:#fb923c;display:flex;align-items:center;justify-content:center;font-size:1.2rem">📦</div>
+      </div>
+      <div style="font-size:1.6rem;font-weight:900;color:var(--text)"><%= stats.totalOrders %> İşlem</div>
+      <div style="height:4px;background:linear-gradient(90deg, #f97316, #ea580c);border-radius:2px;margin-top:12px"></div>
+    </div>
+
+  </div>
+
+  <!-- YÖNETİM SEKMELERİ (NAVIGATION TABS) -->
+  <div style="display:flex;gap:10px;margin-bottom:24px;border-bottom:1px solid var(--border);padding-bottom:12px;overflow-x:auto">
+    <button class="btn admin-tab-btn active" onclick="switchTab('tabOrders')" id="btnTabOrders">
+      📋 Siparişler & Havale Bildirimleri 
+      <% if (pendingOrders.length > 0) { %>
+        <span style="background:#fbbf24;color:#000;padding:2px 8px;border-radius:10px;font-size:.72rem;margin-left:6px;font-weight:800"><%= pendingOrders.length %></span>
+      <% } %>
+    </button>
+    <button class="btn ghost admin-tab-btn" onclick="switchTab('tabGames')" id="btnTabGames">🎮 Oyun Kataloğu (<%= games.length %>)</button>
+    <button class="btn ghost admin-tab-btn" onclick="switchTab('tabCoupons')" id="btnTabCoupons">🎟️ Kupon Yönetimi</button>
+    <button class="btn ghost admin-tab-btn" onclick="switchTab('tabGrant')" id="btnTabGrant">🎁 Hızlı Oyun Gönder</button>
+    <button class="btn ghost admin-tab-btn" onclick="switchTab('tabUsers')" id="btnTabUsers">👥 Yayıncı CRM & Üyeler</button>
+  </div>
+
+  <!-- SEKMELERİN İÇERİĞİ -->
+
+  <!-- SEKME 1: SİPARİŞ YÖNETİMİ -->
+  <div id="tabOrders" class="admin-tab-content">
+    <div class="admin-panel-box">
+      <div class="panel-title" style="display:flex;justify-content:space-between;align-items:center">
+        <span>📋 Tüm Siparişler & Havale Bildirimleri</span>
+        <span style="font-size:.85rem;color:var(--muted);font-weight:400">Son <%= orders.length %> sipariş listeleniyor</span>
+      </div>
+
+      <% if (!orders.length) { %>
+        <div class="empty">Henüz sipariş kaydı bulunmuyor.</div>
+      <% } else { %>
+        <div style="overflow-x:auto">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th>Sipariş Ref</th>
+                <th>Müşteri E-posta</th>
+                <th>Alınan Oyunlar</th>
+                <th>Tutar</th>
+                <th>Tarih</th>
+                <th>Durum</th>
+                <th style="text-align:right">İşlemler</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% orders.forEach(function (o) { %>
+                <tr style="<%= o.status === 'pending' ? 'background:rgba(251,191,36,.04)' : '' %>">
+                  <td><code style="font-weight:800;color:var(--purple2)"><%= o.payment_ref || ('#'+o.id) %></code></td>
+                  <td><strong><%= o.email %></strong></td>
+                  <td class="td-games">
+                    <% if (o.items && o.items[0] && o.items[0].title) { %>
+                      <% o.items.forEach(function(item){ %><span class="order-game-tag sm"><%= item.title %></span> <% }); %>
+                    <% } %>
+                  </td>
+                  <td><strong style="color:var(--orange2);font-size:1rem">₺<%= Number(o.total_amount).toFixed(0) %></strong></td>
+                  <td class="td-date"><%= new Date(o.created_at).toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) %></td>
+                  <td>
+                    <% if (o.status==='paid') { %>
+                      <span class="badge badge-paid">✓ Onaylandı</span>
+                    <% } else if (o.payment_provider==='manual_notified' && o.status==='pending') { %>
+                      <span class="badge" style="background:rgba(234,179,8,.2);color:#fbbf24;border:1px solid #fbbf24;font-weight:800">⚡ Ödeme Bildirimi Geldi</span>
+                    <% } else if (o.status==='pending') { %>
+                      <span class="badge badge-pending">⏳ Havale Bekliyor</span>
+                    <% } else if (o.status==='cancelled') { %>
+                      <span class="badge badge-cancelled">✕ İptal</span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <div class="td-actions" style="justify-content:flex-end">
+                      <% if (o.status==='pending') { %>
+                        <form method="post" action="/admin/siparis/<%= o.id %>/onayla" style="margin:0" onsubmit="return confirm('Sipariş onaylanacak ve oyunlar kullanıcının kütüphanesine eklenecektir. Onaylıyor musunuz?')">
+                          <button class="btn sm success-btn">✓ Onayla & Kütüphaneye Ekle</button>
+                        </form>
+                        <form method="post" action="/admin/siparis/<%= o.id %>/iptal" style="margin:0" onsubmit="return confirm('Siparişi iptal etmek istediğinize emin misiniz?')">
+                          <button class="btn ghost sm" style="color:var(--muted)">✕ İptal</button>
+                        </form>
+                      <% } %>
+                      <form method="post" action="/admin/siparis/<%= o.id %>/sil" style="margin:0" onsubmit="return confirm('Sipariş kaydını silmek istiyor musunuz?')">
+                        <button class="btn ghost sm" style="color:var(--muted);padding:4px 8px" title="Sil">🗑</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- SEKME 2: OYUN KATALOĞU -->
+  <div id="tabGames" class="admin-tab-content" style="display:none">
+    <div style="display:grid;grid-template-columns:340px 1fr;gap:24px;align-items:start">
+      
+      <!-- Sol: Yeni Oyun Ekle Formu -->
+      <div class="admin-panel-box">
+        <div class="panel-title">➕ Kataloğa Yeni Oyun Ekle</div>
+        <form method="post" action="/admin/oyun" enctype="multipart/form-data" class="form">
+          <div class="form-group">
+            <label>Oyun Başlığı *</label>
+            <input name="title" placeholder="Örn: Kelime Savaşı" required>
+          </div>
+          <div class="form-group">
+            <label>Slug <span style="color:var(--muted);font-weight:400">(boş = otomatik)</span></label>
+            <input name="slug" placeholder="kelime-savasi">
+          </div>
+          <div class="form-group">
+            <label>Fiyat (₺) *</label>
+            <input name="price" type="number" step="0.01" min="0" placeholder="149" required>
+          </div>
+          <div class="form-group">
+            <label>Kapak Görsel URL</label>
+            <input name="cover_image_url" placeholder="https://...">
+          </div>
+          <div class="form-group">
+            <label>Node.js Sürümü</label>
+            <input name="node_version" placeholder="18">
+          </div>
+          <div class="form-group">
+            <label>Kategori / Tag</label>
+            <input name="tag" placeholder="Örn: Quiz, Çizim, Aksiyon">
+          </div>
+          <div class="form-group">
+            <label>İtemSatış / Bynogame / Harici Ödeme Linki</label>
+            <input name="external_buy_url" placeholder="https://www.itemsatis.com/ilanlar/...">
+          </div>
+          <div class="form-group">
+            <label>Açıklama</label>
+            <textarea name="description" placeholder="Oyun özellikleri ve açıklaması"></textarea>
+          </div>
+          <label style="cursor:pointer;user-select:none;display:block;margin-bottom:12px">
+            <input type="checkbox" name="featured" value="1"> ⭐ Öne çıkan çok satan oyun
+          </label>
+          <div class="form-group">
+            <label>Oyun Dosyası (.zip)</label>
+            <input type="file" name="file" accept=".zip">
+          </div>
+          <button class="btn big" type="submit" style="width:100%;margin-top:10px">+ Oyunu Kataloğa Ekle</button>
+        </form>
+      </div>
+
+      <!-- Sağ: Mevcut Oyunlar Listesi -->
+      <div class="admin-panel-box">
+        <div class="panel-title">🎮 Katalogdaki Oyunlar (<%= games.length %> Oyun)</div>
+        <% if (!games.length) { %>
+          <div class="empty">Katalogda henüz oyun yok.</div>
+        <% } else { %>
+          <div style="overflow-x:auto">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>Görsel</th>
+                  <th>Başlık</th>
+                  <th>Fiyat</th>
+                  <th>Kategori</th>
+                  <th>Öne Çıkan</th>
+                  <th style="text-align:right">İşlemler</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% games.forEach(function (g) { %>
+                  <tr>
+                    <td>
+                      <div style="width:40px;height:40px;border-radius:8px;overflow:hidden;background:var(--card2);display:flex;align-items:center;justify-content:center">
+                        <% if (g.cover_image_url) { %>
+                          <img src="<%= g.cover_image_url %>" style="width:100%;height:100%;object-fit:cover">
+                        <% } else { %>
+                          🎮
+                        <% } %>
+                      </div>
+                    </td>
+                    <td><strong><%= g.title %></strong></td>
+                    <td><strong style="color:var(--orange2)">₺<%= Number(g.price).toFixed(0) %></strong></td>
+                    <td><span class="badge"><%= g.tag || 'Mini Oyun' %></span></td>
+                    <td><%= g.featured ? '⭐ Evet' : '—' %></td>
+                    <td>
+                      <div class="td-actions" style="justify-content:flex-end">
+                        <button class="btn sm ghost" onclick="openEditModal(<%= JSON.stringify(g) %>)" style="color:var(--purple2)">✏️ Düzenle</button>
+                        <form method="post" action="/admin/oyun/<%= g.id %>/sil" style="margin:0" onsubmit="return confirm('<%= g.title %> oyununu silmek istiyor musunuz?')">
+                          <button class="btn sm danger" style="padding:5px 10px">🗑 Sil</button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
             </table>
-        </div>
+          </div>
+        <% } %>
+      </div>
+
     </div>
+  </div>
+
+  <!-- SEKME 3: KUPON YÖNETİMİ -->
+  <div id="tabCoupons" class="admin-tab-content" style="display:none">
+    <div style="display:grid;grid-template-columns:340px 1fr;gap:24px;align-items:start">
+      
+      <!-- Kupon Ekle Formu -->
+      <div class="admin-panel-box">
+        <div class="panel-title">🎟️ Yeni İndirim Kuponu</div>
+        <form method="post" action="/admin/kupon" class="form">
+          <div class="form-group">
+            <label>Kupon Kodu *</label>
+            <input name="code" placeholder="Örn: REYIZ50" style="text-transform:uppercase;font-weight:700" required>
+          </div>
+          <div class="form-group">
+            <label>İndirim Yüzdesi (%)</label>
+            <input name="discount_percent" type="number" min="0" max="100" placeholder="20">
+          </div>
+          <div class="form-group">
+            <label>Veya Sabit İndirim Tutarı (₺)</label>
+            <input name="discount_amount" type="number" min="0" placeholder="50">
+          </div>
+          <button class="btn big" type="submit" style="width:100%;margin-top:10px">+ Kupon Oluştur</button>
+        </form>
+      </div>
+
+      <!-- Kupon Listesi -->
+      <div class="admin-panel-box">
+        <div class="panel-title">🎟️ Aktif Kuponlar</div>
+        <% if (typeof coupons !== 'undefined' && coupons && coupons.length > 0) { %>
+          <table class="tbl">
+            <thead>
+              <tr><th>Kupon Kodu</th><th>İndirim</th><th>Durum</th><th style="text-align:right">İşlem</th></tr>
+            </thead>
+            <tbody>
+              <% coupons.forEach(function(c){ %>
+                <tr>
+                  <td><strong style="color:var(--purple2);font-size:1.05rem"><%= c.code %></strong></td>
+                  <td><strong style="color:#4ade80"><%= c.discount_percent > 0 ? ('%' + c.discount_percent + ' İndirim') : ('₺' + c.discount_amount + ' İndirim') %></strong></td>
+                  <td><span class="badge badge-paid">🟢 Aktif</span></td>
+                  <td style="text-align:right">
+                    <form method="post" action="/admin/kupon/<%= c.id %>/sil" style="margin:0">
+                      <button class="btn danger sm" style="padding:4px 10px">🗑 Sil</button>
+                    </form>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        <% } else { %>
+          <div class="empty">Aktif indirim kuponu bulunmuyor.</div>
+        <% } %>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SEKME 4: HIZLI OYUN GÖNDER -->
+  <div id="tabGrant" class="admin-tab-content" style="display:none">
+    <div style="max-width:540px;margin:0 auto" class="admin-panel-box">
+      <div class="panel-title">🎁 Kullanıcı Kütüphanesine Doğrudan Oyun Tanımla</div>
+      <p style="color:var(--muted);font-size:.88rem;margin-bottom:18px">İtemSatış'tan satın alan veya hediye etmek istediğiniz yayıncının e-postasına oyunu doğrudan aktarın.</p>
+      <form method="post" action="/admin/kullaniciya-oyun-ekle" class="form">
+        <div class="form-group">
+          <label>Kullanıcı E-postası *</label>
+          <input name="email" placeholder="yayin_arkadasi@gmail.com" required>
+        </div>
+        <div class="form-group">
+          <label>Tanımlanacak Oyun *</label>
+          <select name="game_id" style="width:100%;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:10px;color:var(--text);font-weight:700" required>
+            <% games.forEach(function(g){ %>
+              <option value="<%= g.id %>"><%= g.title %> (₺<%= Number(g.price).toFixed(0) %>)</option>
+            <% }); %>
+          </select>
+        </div>
+        <button class="btn big" type="submit" style="width:100%;margin-top:12px">+ Kullanıcı Kütüphanesine Tanımla ➔</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- SEKME 5: YAYINCI CRM & ÜYELER -->
+  <div id="tabUsers" class="admin-tab-content" style="display:none">
+    <div class="admin-panel-box">
+      <div class="panel-title">👥 Kayıtlı Yayıncı Üyeler (<%= users ? users.length : 0 %> Üye)</div>
+      <% if (!users || !users.length) { %>
+        <div class="empty">Kayıtlı üye bulunmuyor.</div>
+      <% } else { %>
+        <div style="overflow-x:auto">
+          <table class="tbl">
+            <thead>
+              <tr><th>Ad</th><th>E-posta</th><th>Yetki / Rol</th><th>Kayıt Tarihi</th><th style="text-align:right">İşlem</th></tr>
+            </thead>
+            <tbody>
+              <% users.forEach(function (u) { %>
+                <tr>
+                  <td><strong><%= u.name || '—' %></strong></td>
+                  <td><%= u.email %></td>
+                  <td>
+                    <% if (u.role === 'admin') { %>
+                      <span class="badge badge-paid">⚙ Admin</span>
+                    <% } else { %>
+                      <span class="badge">Yayıncı Üye</span>
+                    <% } %>
+                  </td>
+                  <td class="td-date"><%= new Date(u.created_at).toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric'}) %></td>
+                  <td style="text-align:right">
+                    <form method="post" action="/admin/kullanici/<%= u.id %>/rol" style="margin:0">
+                      <% if (u.role === 'admin') { %>
+                        <input type="hidden" name="role" value="user">
+                        <button class="btn ghost sm" style="color:var(--muted)">Adminlikten Çıkar</button>
+                      <% } else { %>
+                        <input type="hidden" name="role" value="admin">
+                        <button class="btn sm ghost" style="color:var(--purple2)">+ Admin Yap</button>
+                      <% } %>
+                    </form>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+</section>
+
+<!-- OYUN DÜZENLEME MODAL (POP-UP) -->
+<div id="editModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(12px);z-index:999;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--card);border:1px solid var(--border2);border-radius:22px;max-width:560px;width:100%;padding:28px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 50px rgba(0,0,0,.8)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:1px solid var(--border);padding-bottom:14px">
+      <h3 style="font-size:1.25rem;font-weight:800">✏️ Oyunu Düzenle</h3>
+      <button onclick="closeEditModal()" style="background:none;border:none;color:var(--muted);font-size:1.6rem;cursor:pointer">✕</button>
+    </div>
+    <form id="editForm" method="post" action="" enctype="multipart/form-data" class="form">
+      <div class="form-group">
+        <label>Oyun Başlığı *</label>
+        <input id="editTitle" name="title" required>
+      </div>
+      <div class="form-group">
+        <label>Slug</label>
+        <input id="editSlug" name="slug" required>
+      </div>
+      <div class="form-group">
+        <label>Fiyat (₺) *</label>
+        <input id="editPrice" name="price" type="number" step="0.01" min="0" required>
+      </div>
+      <div class="form-group">
+        <label>Kapak Görsel URL</label>
+        <input id="editCover" name="cover_image_url">
+      </div>
+      <div class="form-group">
+        <label>Node.js Sürümü</label>
+        <input id="editNode" name="node_version">
+      </div>
+      <div class="form-group">
+        <label>Kategori / Tag</label>
+        <input id="editTag" name="tag">
+      </div>
+      <div class="form-group">
+        <label>İtemSatış / Bynogame / Harici Ödeme Linki</label>
+        <input id="editExternalUrl" name="external_buy_url" placeholder="https://www.itemsatis.com/ilanlar/...">
+      </div>
+      <div class="form-group">
+        <label>Açıklama</label>
+        <textarea id="editDesc" name="description"></textarea>
+      </div>
+      <label style="cursor:pointer;user-select:none;display:block;margin-bottom:12px">
+        <input id="editFeatured" type="checkbox" name="featured" value="1"> ⭐ Öne çıkan çok satan oyun
+      </label>
+      <div class="form-group">
+        <label>Yeni Oyun Dosyası Yükle (.zip) <span style="color:var(--muted);font-weight:400">(Boş kalırsa mevcut dosya korunur)</span></label>
+        <input type="file" name="file" accept=".zip">
+      </div>
+      <div style="display:flex;gap:10px;margin-top:20px">
+        <button class="btn big" type="submit" style="flex:1">💾 Değişiklikleri Kaydet</button>
+        <button type="button" class="btn ghost" onclick="closeEditModal()">İptal</button>
+      </div>
+    </form>
+  </div>
 </div>
+
+<!-- SEKME GEÇİŞ SCRIPT'İ -->
+<script>
+function switchTab(tabId) {
+  var contents = document.querySelectorAll('.admin-tab-content');
+  contents.forEach(function(c) { c.style.display = 'none'; });
+
+  var btns = document.querySelectorAll('.admin-tab-btn');
+  btns.forEach(function(b) { b.classList.remove('active'); b.classList.add('ghost'); });
+
+  document.getElementById(tabId).style.display = 'block';
+  var activeBtn = document.querySelector('[onclick="switchTab(\'' + tabId + '\')"]');
+  if (activeBtn) {
+    activeBtn.classList.remove('ghost');
+    activeBtn.classList.add('active');
+  }
+}
+
+function openEditModal(game) {
+  document.getElementById('editForm').action = '/admin/oyun/' + game.id + '/duzenle';
+  document.getElementById('editTitle').value = game.title || '';
+  document.getElementById('editSlug').value = game.slug || '';
+  document.getElementById('editPrice').value = game.price || 0;
+  document.getElementById('editCover').value = game.cover_image_url || '';
+  document.getElementById('editNode').value = game.node_version || '18';
+  document.getElementById('editTag').value = game.tag || '';
+  document.getElementById('editDesc').value = game.description || '';
+  document.getElementById('editExternalUrl').value = game.external_buy_url || '';
+  document.getElementById('editFeatured').checked = !!game.featured;
+  document.getElementById('editModal').style.display = 'flex';
+}
+
+function closeEditModal() {
+  document.getElementById('editModal').style.display = 'none';
+}
+</script>
 
 <%- include('partials/footer') %>

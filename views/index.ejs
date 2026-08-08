@@ -1,37 +1,102 @@
 <%- include('partials/header') %>
 
-<section class="hero">
-    <div class="container hero-content">
-        <h1>Sınırsız Eğlence, En Uygun Fiyatlarla!</h1>
-        <p>Binlerce dijital PC ve konsol oyununa anında sahip olun. Anında teslimat ve %100 orijinal lisans garantisi.</p>
-        <a href="/games" class="btn btn-lg btn-primary"><i class="fa-solid fa-fire"></i> Mağazayı Keşfet</a>
-    </div>
+<!-- HERO SECTION -->
+<section class="hero" style="padding: 45px 20px 30px; text-align: center; position: relative;">
+  <div class="hero-glow-1"></div>
+  <div class="hero-glow-2"></div>
+  
+  <div class="hero-badge" style="display:inline-flex; align-items:center; gap:8px; padding:6px 16px; border-radius:30px; background:rgba(124,58,237,0.15); border:1px solid rgba(167,139,250,0.3); color:#c4b5fd; font-size:0.85rem; font-weight:700; margin-bottom:16px;">
+    🔥 TikTok LIVE İnteraktif Oyun Mağazası
+  </div>
+
+  <h1 style="font-size: 2.5rem; font-weight: 900; line-height: 1.25; margin-bottom: 14px; letter-spacing: -0.02em;">
+    TikTok Canlı Yayın İnteraktif Oyunları 🚀
+  </h1>
+  
+  <p style="max-width: 680px; margin: 0 auto 24px; font-size: 1.05rem; color: var(--muted); line-height: 1.6;">
+    Hediyelerle ve chat mesajlarıyla oynanan hazır Node.js oyun yazılımları. 
+    <b>Hemen satın al, Kütüphanenden .ZIP indir ve yayınına başla!</b>
+  </p>
+
+  <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 24px;">
+    <a class="btn big" href="#oyunlar-katalog" style="font-size: 1rem; padding: 12px 24px; border-radius: 10px; font-weight: 800; background: linear-gradient(135deg, #7c3aed, #ea580c); color: #fff;">🎮 Oyun Kataloğunu Gör 👇</a>
+    <a class="btn big ghost" href="/rehber" style="font-size: 1rem; padding: 12px 24px; border-radius: 10px; font-weight: 700; border: 1px solid var(--border2); color: var(--text);">⚡ OBS Kurulum Rehberi</a>
+  </div>
 </section>
 
-<section class="container section">
-    <h2 class="section-title"><i class="fa-solid fa-star text-warning"></i> Öne Çıkan Oyunlar</h2>
-    <div class="games-grid">
-        <% if (featuredGames && featuredGames.length > 0) { %>
-            <% featuredGames.forEach(game => { %>
-                <%- include('partials/gamecard', { game: game }) %>
-            <% }); %>
-        <% } else { %>
-            <p>Henüz öne çıkan oyun bulunmuyor.</p>
-        <% } %>
+<!-- 🎮 OYUN KATALOĞU (TÜM OYUNLAR ANINDA GÖRÜNÜR) -->
+<section class="section" id="oyunlar-katalog" style="padding: 20px 20px 50px;">
+  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 16px;">
+    <div>
+      <h2 style="font-size: 1.6rem; font-weight: 900; margin-bottom: 4px;">🎮 İnteraktif Oyun Kataloğu</h2>
+      <p style="color: var(--muted); font-size: 0.9rem;">Yayınınızda hediyelerle etkileşimi katlayacak hazır yazılımlar</p>
     </div>
+    
+    <input type="text" id="homeSearchInput" placeholder="🔍 Oyun ara..." style="padding: 10px 16px; border-radius: 10px; border: 1px solid var(--border2); background: var(--card); color: var(--text); font-size: 0.9rem; width: 240px; outline: none;">
+  </div>
+
+  <div class="grid" id="homeGamesGrid">
+    <% if (typeof games !== 'undefined' && games && games.length > 0) { %>
+      <% games.forEach(function (g) { %>
+        <%- include('partials/gamecard', { game: g }) %>
+      <% }) %>
+    <% } else { %>
+      <div class="empty" style="grid-column: 1 / -1; padding: 40px; text-align: center; background: var(--card); border-radius: 16px; border: 1px solid var(--border);">
+        <div style="font-size: 3rem; margin-bottom: 12px;">🎮</div>
+        <h3>Henüz Katalogda Oyun Yok</h3>
+        <p style="color: var(--muted); margin-top: 6px;">Admin panelinden oyun eklediğinizde bu alanda anında görünecektir.</p>
+        <a href="/admin" class="btn sm" style="margin-top: 16px;">+ Admin Panelinden Oyun Ekle</a>
+      </div>
+    <% } %>
+  </div>
+  <p class="empty" id="homeNoResults" style="display:none; text-align:center; padding:30px;">Aramanıza uygun oyun bulunamadı.</p>
 </section>
 
-<section class="container section">
-    <h2 class="section-title"><i class="fa-solid fa-clock-rotate-left text-info"></i> Son Eklenenler</h2>
-    <div class="games-grid">
-        <% if (latestGames && latestGames.length > 0) { %>
-            <% latestGames.forEach(game => { %>
-                <%- include('partials/gamecard', { game: game }) %>
-            <% }); %>
-        <% } else { %>
-            <p>Henüz eklenmiş oyun bulunmuyor.</p>
-        <% } %>
+<!-- 🚀 3 ADIMDA KURULUM REHBERİ -->
+<section class="section dark-bg" style="padding: 40px 20px; background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+  <div style="text-align: center; margin-bottom: 30px;">
+    <h2 style="font-size: 1.6rem; font-weight: 800;">🚀 3 Adımda Canlı Yayına Başla</h2>
+    <p style="color: var(--muted); font-size: 0.9rem;">Pratik ve kolay kurulum adımları</p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; max-width: 1000px; margin: 0 auto;">
+    <div style="background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 24px;">
+      <div style="font-size: 1.6rem; font-weight: 900; color: #a78bfa; margin-bottom: 8px;">1. Oyunu Seç & İndir</div>
+      <p style="color: var(--muted); font-size: 0.88rem; line-height: 1.5;">Satın alma tamamlandığında `.zip` dosyası Kütüphanem sayfanıza tanımlanır ve anında bilgisayarınıza inersin.</p>
     </div>
+    <div style="background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 24px;">
+      <div style="font-size: 1.6rem; font-weight: 900; color: #f97316; margin-bottom: 8px;">2. OBS Studio'ya Bağla</div>
+      <p style="color: var(--muted); font-size: 0.88rem; line-height: 1.5;">Klasördeki `.env` dosyasına TikTok adını yaz, `npm start` yap ve OBS'te Tarayıcı Kaynağı olarak ekle.</p>
+    </div>
+    <div style="background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 24px;">
+      <div style="font-size: 1.6rem; font-weight: 900; color: #22c55e; margin-bottom: 8px;">3. Yayınla & Kazan</div>
+      <p style="color: var(--muted); font-size: 0.88rem; line-height: 1.5;">Canlı yayında gelen hediyeler ve chat mesajları oyunda canlı tepkiler vererek kazancınızı artırır.</p>
+    </div>
+  </div>
 </section>
+
+<!-- CANLI ARAMA SCRIPT'I -->
+<script>
+(function() {
+  const searchInput = document.getElementById('homeSearchInput');
+  const cards = document.querySelectorAll('#homeGamesGrid article');
+  const noRes = document.getElementById('homeNoResults');
+  
+  if (searchInput && cards.length > 0) {
+    searchInput.addEventListener('input', function() {
+      const q = this.value.toLowerCase().trim();
+      let visible = 0;
+      cards.forEach(function(c) {
+        const title = (c.dataset.title || '').toLowerCase();
+        const tag   = (c.dataset.tag || '').toLowerCase();
+        const show  = title.includes(q) || tag.includes(q);
+        c.style.display = show ? '' : 'none';
+        if (show) visible++;
+      });
+      if (noRes) noRes.style.display = (visible === 0) ? '' : 'none';
+    });
+  }
+})();
+</script>
 
 <%- include('partials/footer') %>
